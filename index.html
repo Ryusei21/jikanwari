@@ -284,6 +284,48 @@
                 font-size: 1rem;
             }
         }
+        @media (max-width: 768px) {
+        .schedule-grid {
+            display: none; /* PCグリッドは非表示に */
+        }
+    
+        .mobile-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 1rem;
+            padding: 1rem;
+        }
+    
+        .day-group {
+            flex: 0 0 90%;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            scroll-snap-align: start;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            min-width: 280px;
+        }
+    
+        .day-group h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: var(--accent);
+        }
+    
+        .class-entry {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+    
+        .class-entry strong {
+            color: var(--text-main);
+        }
+    }
+
     </style>
 </head>
 <body data-theme="light">
@@ -316,6 +358,8 @@
             <input type="date" id="week-start" />
         </div>
         <div class="schedule-grid" id="grid"></div>
+        <div class="mobile-scroll" id="mobile-scroll" style="display: none;"></div>
+
         <div class="tasks">
             <h3>タスク・提出物</h3>
             <div class="task-input">
@@ -387,6 +431,39 @@
         entries = querySnapshot.docs.map(doc => doc.data());
         renderTimetable();
         }
+        function renderMobileScrollView() {
+        const container = document.getElementById('mobile-scroll');
+        container.innerHTML = '';
+    
+        const groupings = [
+            ['月曜日', '火曜日'],
+            ['水曜日', '木曜日'],
+            ['金曜日']
+        ];
+    
+        groupings.forEach(group => {
+            const section = document.createElement('div');
+            section.className = 'day-group';
+            section.innerHTML = `<h3>${group.join(' & ')}</h3>`;
+    
+            group.forEach(day => {
+                const dayEntries = entries.filter(e => e.day === day);
+                dayEntries.sort((a, b) => parseInt(a.period) - parseInt(b.period));
+                dayEntries.forEach(e => {
+                    const div = document.createElement('div');
+                    div.className = 'class-entry';
+                    div.innerHTML = `
+                        ${e.period}限：<strong>${e.subject}</strong>（${e.teacher || '教員未定'}）<br>
+                        ${e.items || ''} ${e.notes ? `<br><i>${e.notes}</i>` : ''}
+                    `;
+                    section.appendChild(div);
+                });
+            });
+    
+            container.appendChild(section);
+        });
+    }
+
 
         let tasks = JSON.parse(localStorage.getItem('tasks'))||[];
         let teachers = JSON.parse(localStorage.getItem('teachers'))||["山田太郎","田中花子","鈴木一郎","佐藤美咲","高橋健太"];
@@ -514,6 +591,7 @@
                     }
                 }
             });
+            renderMobileScrollView();
         }
         import { setDoc, doc, deleteDoc, } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -603,6 +681,23 @@
         weekInput.value = localStorage.getItem('weekStart')||'';
         weekInput.addEventListener('change', updateHeaders);
         initGrid(); updateHeaders(); renderSelectOptions(); renderSettingsLists(); setupRealtimeSync();
+
+        function checkViewportMode() {
+        const isMobile = window.innerWidth <= 768;
+        document.getElementById('grid').style.display = isMobile ? 'none' : 'grid';
+        document.getElementById('mobile-scroll').style.display = isMobile ? 'flex' : 'none';
+        }
+        
+        window.addEventListener('resize', () => {
+            checkViewportMode();
+            renderTimetable();
+            renderMobileScrollView();
+        });
+        
+        // 初期化のとき呼ぶ
+        checkViewportMode();
+        renderMobileScrollView();
+
 
       </script>
 </body>
