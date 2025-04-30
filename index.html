@@ -376,28 +376,27 @@
           height: 18px;
         }
 
-        #settings-toggle {
+        .settings-button {
           position: fixed;
-          bottom: 1.5rem;
-          right: 1.5rem;
-          width: 50px;
-          height: 50px;
-          background-color: #ffb6c1;
-          border: none;
+          top: 1rem;
+          left: 1rem;
+          background-color: #fff;
+          color: #333;
+          border: 1px solid #ccc;
           border-radius: 50%;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-          font-size: 24px;
-          color: white;
+          width: 40px;
+          height: 40px;
+          font-size: 20px;
           cursor: pointer;
-          z-index: 999;
-          transition: transform 0.2s, box-shadow 0.2s;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+          transition: background-color 0.2s, transform 0.2s;
+          z-index: 1000;
         }
         
-        #settings-toggle:hover {
-          transform: scale(1.1);
-          box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        .settings-button:hover {
+          background-color: #f0f0f0;
+          transform: scale(1.05);
         }
-
 
 
     </style>
@@ -410,7 +409,7 @@
               <button id="login-button">Googleでログイン</button>
               <button id="logout-button" style="display: none;">ログアウト</button>
             </div>
-            <button id="settingsBtn">⚙️</button>
+            <button id="settingsBtn"class="settings-button">⚙️</button>
           </div>
 
         <div id="settings-panel" onclick="event.stopPropagation()">
@@ -758,24 +757,31 @@
             modalOverlay.style.display='flex';
         }
         document.getElementById('pf-cancel').onclick=()=>modalOverlay.style.display='none';
-        document.getElementById('pf-save').onclick = () => {
-          const data = {
-                day: document.getElementById('pf-day').textContent,
-                period: document.getElementById('pf-period').textContent,
-                subject: document.getElementById('pf-subject').value,
-                teacher: document.getElementById('pf-teacher').value,
-                items: document.getElementById('pf-items').value,
-                url: document.getElementById('pf-url').value,
-                urlName: document.getElementById('pf-urlname').value,
-                notes: document.getElementById('pf-notes').value,
-                span: parseInt(document.getElementById('pf-span').value) || 1};
-          const idx = entries.findIndex(x => x.day === data.day && x.period === data.period);
-          if (idx >= 0) entries.splice(idx, 1, data);
-          else entries.push(data);
-        
-          modalOverlay.style.display = 'none';
-          saveTimetable(currentUserUid);
-        };
+window.addEventListener('DOMContentLoaded', () => {
+  const saveBtn = document.getElementById('pf-save');
+  if (saveBtn) {
+    saveBtn.onclick = () => {
+      const data = {
+        day: document.getElementById('pf-day').textContent,
+        period: document.getElementById('pf-period').textContent,
+        subject: document.getElementById('pf-subject').value,
+        teacher: document.getElementById('pf-teacher').value,
+        items: document.getElementById('pf-items').value,
+        url: document.getElementById('pf-url').value,
+        urlName: document.getElementById('pf-urlname').value,
+        notes: document.getElementById('pf-notes').value,
+        span: parseInt(document.getElementById('pf-span').value) || 1
+      };
+
+      const idx = entries.findIndex(x => x.day === data.day && x.period === data.period);
+      if (idx >= 0) entries.splice(idx, 1, data);
+      else entries.push(data);
+
+      modalOverlay.style.display = 'none';
+      saveTimetable(currentUserUid);
+    };
+  }
+});
 
         // タスク管理
         const taskInput=document.getElementById('task-input'), taskList=document.getElementById('task-list');
