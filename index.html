@@ -432,37 +432,33 @@
         renderTimetable();
         }
         function renderMobileScrollView() {
-        const container = document.getElementById('mobile-scroll');
-        container.innerHTML = '';
-    
-        const groupings = [
-            ['月曜日', '火曜日'],
-            ['水曜日', '木曜日'],
-            ['金曜日']
-        ];
-    
-        groupings.forEach(group => {
+          const container = document.getElementById('mobile-scroll');
+          container.innerHTML = '';
+        
+          const days = ['月曜日','火曜日','水曜日','木曜日','金曜日'];
+        
+          days.forEach(day => {
             const section = document.createElement('div');
             section.className = 'day-group';
-            section.innerHTML = `<h3>${group.join(' & ')}</h3>`;
-    
-            group.forEach(day => {
-                const dayEntries = entries.filter(e => e.day === day);
-                dayEntries.sort((a, b) => parseInt(a.period) - parseInt(b.period));
-                dayEntries.forEach(e => {
-                    const div = document.createElement('div');
-                    div.className = 'class-entry';
-                    div.innerHTML = `
-                        ${e.period}限：<strong>${e.subject}</strong>（${e.teacher || '教員未定'}）<br>
-                        ${e.items || ''} ${e.notes ? `<br><i>${e.notes}</i>` : ''}
-                    `;
-                    section.appendChild(div);
-                });
+            section.innerHTML = `<h3>${day}</h3>`;
+        
+            const dayEntries = entries.filter(e => e.day === day);
+            dayEntries.sort((a, b) => parseInt(a.period) - parseInt(b.period));
+        
+            dayEntries.forEach(e => {
+              const div = document.createElement('div');
+              div.className = 'class-entry';
+              div.innerHTML = `
+                ${e.period}限：<strong>${e.subject}</strong>（${e.teacher || '教員未定'}）<br>
+                ${e.items || ''} ${e.notes ? `<br><i>${e.notes}</i>` : ''}
+              `;
+              section.appendChild(div);
             });
-    
+        
             container.appendChild(section);
-        });
-    }
+          });
+        }
+
 
 
         let tasks = JSON.parse(localStorage.getItem('tasks'))||[];
