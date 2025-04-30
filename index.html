@@ -639,7 +639,8 @@
             };
             const idx=entries.findIndex(x=>x.day===data.day&&x.period===data.period);
             if(idx>=0) entries.splice(idx,1,data); else entries.push(data);
-            modalOverlay.style.display='none'; saveTimetable();
+            modalOverlay.style.display='none'; 
+            saveTimetable();
         };
 
         // タスク管理
@@ -660,14 +661,13 @@
 
 
         async function saveTimetable() {
-          if (unsubscribeSnapshot) unsubscribeSnapshot(); // ⛔ 監視を一時停止
+          const entriesToSave = JSON.parse(JSON.stringify(entries));
         
           for (const e of entries) {
             const id = `${e.day}_${e.period}`;
             await setDoc(doc(db, "timetable", id), e);
           }
-        
-          setupRealtimeSync(); // ✅ 保存後に監視を再開
+
         }
 
       
