@@ -352,10 +352,11 @@
                 <button class="add-item" id="add-url">追加</button>
             </div>
         </div>
-        <div id="auth-controls">
-        <button id="login-button">Googleでログイン</button>
-        <span id="user-name">未ログイン</span>
-        </div>
+            <div id="auth-controls">
+              <button id="login-button">Googleでログイン</button>
+              <button id="logout-button" style="display: none;">ログアウト</button>
+              <span id="user-name">未ログイン</span>
+            </div>
 
     </header>
     <div class="container">
@@ -424,32 +425,49 @@
         const provider = new GoogleAuthProvider();
         
         const loginBtn = document.getElementById('login-button');
+        const logoutBtn = document.getElementById('logout-button');
         const userNameSpan = document.getElementById('user-name');
-        
         let currentUserUid = null;
         
         loginBtn.onclick = () => {
           signInWithPopup(auth, provider)
             .then((result) => {
               const user = result.user;
-              userNameSpan.textContent = `${user.displayName} さんとしてログイン中`;
-              currentUserUid = user.uid;
-              startAppForUser(currentUserUid);
+              updateLoginUI(user);
+              startAppForUser(user.uid);
             })
             .catch((error) => {
               alert("ログインに失敗しました：" + error.message);
             });
         };
         
+        logoutBtn.onclick = () => {
+          auth.signOut().then(() => {
+            location.reload(); // ログアウト後はリロードしてUI初期化
+          });
+        };
+        
         onAuthStateChanged(auth, (user) => {
           if (user) {
-            userNameSpan.textContent = `${user.displayName} さんとしてログイン中`;
+            updateLoginUI(user);
             currentUserUid = user.uid;
             startAppForUser(currentUserUid);
           } else {
-            userNameSpan.textContent = "未ログイン";
+            updateLoginUI(null);
           }
         });
+        
+        function updateLoginUI(user) {
+          if (user) {
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'inline-block';
+            userNameSpan.textContent = `${user.displayName} さんでログイン中`;
+          } else {
+            loginBtn.style.display = 'inline-block';
+            logoutBtn.style.display = 'none';
+            userNameSpan.textContent = '未ログイン';
+          }
+        }
 
         const db = getFirestore(app);
         
