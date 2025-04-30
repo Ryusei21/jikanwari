@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>時間割マネージャー</title>
     <style>
-            :root {
-              --bg-light: #ffffff;
-              --bg-alt: #f2f3f5;
-              --text-main: #333333;
-              --text-secondary: #555555;
-              --accent: #4e54c8; /* 落ち着いた青紫 */
-              --border: #cccccc;
-              --cell-gap: 6px;
-              --font-base: 'Segoe UI', sans-serif;
-            }
+        :root {
+          --bg-light: #ffffff;
+          --bg-dark: #f2f2f2;
+          --text-main: #333333;
+          --accent: #4e54c8;
+          --border: #cccccc;
+        }
+
 
 
         [data-theme="dark"] {
@@ -154,24 +152,20 @@
                 padding: 4px;
             }
             .header-cell {
-              background: var(--accent);
-              color: #fff;
-              text-align: center;
-              font-weight: bold;
               padding: 0.5rem;
+              margin: 0.2rem;
               font-size: 1rem;
-              line-height: 1.4;
+              text-align: center;
+              background-color: #f0f0f0;
               border-radius: 4px;
             }
             
             .period-header, .day-header {
-              background: var(--accent);
-              color: #fff;
-              display: flex;
-              align-items: center;
-              justify-content: center;
               padding: 0.5rem;
+              margin: 0.2rem;
               font-size: 1rem;
+              text-align: center;
+              background-color: #f0f0f0;
               border-radius: 4px;
             }
             .day-header {
@@ -410,16 +404,14 @@
 </head>
 <body data-theme="light">
     <header>
-<header>
-          <div style="display: flex; align-items: center; gap: 1rem;">
-            <div>時間割マネージャー</div>
-            <div id="auth-controls" style="font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div id="auth-controls">
               <span id="user-name">未ログイン</span>
               <button id="login-button">Googleでログイン</button>
               <button id="logout-button" style="display: none;">ログアウト</button>
             </div>
+            <button id="settings-toggle">⚙️</button>
           </div>
-          <button class="settings-btn" id="open-settings">⚙️</button>
 
         <div id="settings-panel" onclick="event.stopPropagation()">
             <h3>ダークモード</h3>
