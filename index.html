@@ -660,12 +660,6 @@
         async function saveTimetable() {
         const timetableCollection = collection(db, "timetable");
 
-        // いったん全部削除してから保存する方法
-        const snapshot = await getDocs(timetableCollection);
-        for (const d of snapshot.docs) {
-            await deleteDoc(d.ref);
-        }
-
         // そしてentriesの中身を全部保存し直す
         for (const e of entries) {
             const id = `${e.day}_${e.period}`; // ドキュメントID（例: 月曜日_1）
