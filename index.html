@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>時間割マネージャー</title>
     <style>
-    :root {
-      --bg-light: #ffffff;
-      --bg-dark: #eeeeee;
-      --text-main: #222222;
-      --text-light: #ffffff;
-      --border: #cccccc;
-      --accent: #4444ff;
-      --accent-dark: #3333cc;
-    }
+        :root {
+          --bg-light: #fffafc;
+          --bg-dark: #f8f0f5;
+          --text-main: #3a3a3a;
+          --accent: #ff69b4; /* HotPink */
+          --accent-dark: #d05299;
+          --border: #e0e0e0;
+        }
+
         [data-theme="dark"] {
             --bg-light: #1f1f2e;
             --bg-alt: #2b2b3c;
@@ -324,41 +324,69 @@
             color: var(--text-main);
         }
     }
-            #auth-controls {
-              position: absolute;
-              top: 0.5rem;
-              right: 1rem;
-              font-size: 0.85rem;
-              display: flex;
-              align-items: center;
-              gap: 0.5rem;
-            }
-            
-            #auth-controls button {
-              padding: 0.3rem 0.6rem;
-              font-size: 0.85rem;
-              border: 1px solid #ccc;
-              background-color: #f9f9f9;
-              color: #333;
-              border-radius: 4px;
-              cursor: pointer;
-            }
-            
-            #auth-controls button:hover {
-              background-color: #f0f0f0;
-            }
-            
-            #settings-toggle {
-              position: absolute;
-              top: 0.5rem;
-              right: 0.5rem;
-              background-color: transparent;
-              border: none;
-              font-size: 1.5rem;
-              cursor: pointer;
-              color: #333;
-            }
-                 
+    #auth-controls {
+          position: fixed;
+          top: 1rem;
+          right: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          font-size: 0.85rem;
+          z-index: 1000;
+          background: rgba(255,255,255,0.95);
+          padding: 0.5rem 0.75rem;
+          border-radius: 12px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        #auth-controls button {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          background-color: white;
+          color: #444;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 0.35rem 0.75rem;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: background-color 0.2s, box-shadow 0.2s;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        #auth-controls button:hover {
+          background-color: #f3f3f3;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        
+        #auth-controls img {
+          width: 18px;
+          height: 18px;
+        }
+
+        #settings-toggle {
+          position: fixed;
+          bottom: 1.5rem;
+          right: 1.5rem;
+          width: 50px;
+          height: 50px;
+          background-color: #ffb6c1;
+          border: none;
+          border-radius: 50%;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+          font-size: 24px;
+          color: white;
+          cursor: pointer;
+          z-index: 999;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        #settings-toggle:hover {
+          transform: scale(1.1);
+          box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+
 
     </style>
 </head>
