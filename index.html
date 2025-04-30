@@ -597,6 +597,8 @@
 
         import { onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        let unsubscribeSnapshot = null;
+
         function setupRealtimeSync() {
         const timetableCollection = collection(db, "timetable");
         onSnapshot(timetableCollection, (snapshot) => {
@@ -658,15 +660,16 @@
 
 
         async function saveTimetable() {
-        const timetableCollection = collection(db, "timetable");
-
-        // そしてentriesの中身を全部保存し直す
-        for (const e of entries) {
-            const id = `${e.day}_${e.period}`; // ドキュメントID（例: 月曜日_1）
+          if (unsubscribeSnapshot) unsubscribeSnapshot(); // ⛔ 監視を一時停止
+        
+          for (const e of entries) {
+            const id = `${e.day}_${e.period}`;
             await setDoc(doc(db, "timetable", id), e);
+          }
+        
+          setupRealtimeSync(); // ✅ 保存後に監視を再開
         }
-        console.log("Firestoreに保存しました！");
-        }
+
       
 
 
