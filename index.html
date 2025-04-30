@@ -665,7 +665,16 @@
         }
         document.getElementById('pf-cancel').onclick=()=>modalOverlay.style.display='none';
         document.getElementById('pf-save').onclick = () => {
-          const data = { ... };
+          const data = {
+                day: document.getElementById('pf-day').textContent,
+                period: document.getElementById('pf-period').textContent,
+                subject: document.getElementById('pf-subject').value,
+                teacher: document.getElementById('pf-teacher').value,
+                items: document.getElementById('pf-items').value,
+                url: document.getElementById('pf-url').value,
+                urlName: document.getElementById('pf-urlname').value,
+                notes: document.getElementById('pf-notes').value,
+                span: parseInt(document.getElementById('pf-span').value) || 1};
           const idx = entries.findIndex(x => x.day === data.day && x.period === data.period);
           if (idx >= 0) entries.splice(idx, 1, data);
           else entries.push(data);
