@@ -637,7 +637,7 @@
             };
             const idx=entries.findIndex(x=>x.day===data.day&&x.period===data.period);
             if(idx>=0) entries.splice(idx,1,data); else entries.push(data);
-            modalOverlay.style.display='none'; saveTimetable(); renderTimetable();
+            modalOverlay.style.display='none'; saveTimetable();
         };
 
         // タスク管理
