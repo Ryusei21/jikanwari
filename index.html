@@ -352,6 +352,11 @@
                 <button class="add-item" id="add-url">追加</button>
             </div>
         </div>
+        <div id="auth-controls">
+        <button id="login-button">Googleでログイン</button>
+        <span id="user-name">未ログイン</span>
+        </div>
+
     </header>
     <div class="container">
         <div class="week-input">
@@ -395,6 +400,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+
         
         // TODO: Add SDKs for Firebase products that you want to use
         // https://firebase.google.com/docs/web/setup#available-libraries
@@ -412,6 +420,37 @@
               
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        
+        const loginBtn = document.getElementById('login-button');
+        const userNameSpan = document.getElementById('user-name');
+        
+        let currentUserUid = null;
+        
+        loginBtn.onclick = () => {
+          signInWithPopup(auth, provider)
+            .then((result) => {
+              const user = result.user;
+              userNameSpan.textContent = `${user.displayName} さんとしてログイン中`;
+              currentUserUid = user.uid;
+              startAppForUser(currentUserUid);
+            })
+            .catch((error) => {
+              alert("ログインに失敗しました：" + error.message);
+            });
+        };
+        
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            userNameSpan.textContent = `${user.displayName} さんとしてログイン中`;
+            currentUserUid = user.uid;
+            startAppForUser(currentUserUid);
+          } else {
+            userNameSpan.textContent = "未ログイン";
+          }
+        });
+
         const db = getFirestore(app);
         
         const days = ['月','火','水','木','金'];
@@ -425,12 +464,7 @@
         // 状態管理
         import { getDocs, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firestoreの'timetable'コレクションからデータ取得してentriesに代入
-        async function loadTimetable() {
-        const querySnapshot = await getDocs(collection(db, "timetable"));
-        entries = querySnapshot.docs.map(doc => doc.data());
-        renderTimetable();
-        }
+
         function renderMobileScrollView() {
           const container = document.getElementById('mobile-scroll');
           container.innerHTML = '';
@@ -595,13 +629,22 @@
 
         let unsubscribeSnapshot = null;
 
-        function setupRealtimeSync() {
-        const timetableCollection = collection(db, "timetable");
-        onSnapshot(timetableCollection, (snapshot) => {
+        function startAppForUser(uid) {
+          initGrid();
+          updateHeaders();
+          renderSelectOptions();
+          renderSettingsLists();
+          setupRealtimeSync(uid);
+        }
+
+        function setupRealtimeSync(uid) {
+          const timetableCollection = collection(db, `timetable_${uid}`);
+          if (unsubscribeSnapshot) unsubscribeSnapshot(); // ← 前のリスナー停止
+          unsubscribeSnapshot = onSnapshot(timetableCollection, (snapshot) => {
             entries = snapshot.docs.map(doc => doc.data());
             renderTimetable();
-            console.log("リアルタイムで更新しました！");
-        });
+            renderMobileScrollView();
+          });
         }
 
 
@@ -621,22 +664,14 @@
             modalOverlay.style.display='flex';
         }
         document.getElementById('pf-cancel').onclick=()=>modalOverlay.style.display='none';
-        document.getElementById('pf-save').onclick=()=>{
-            const data={
-                day:pf.day.textContent,
-                period:pf.period.textContent,
-                subject:pf.subject.value.trim(),
-                teacher:pf.teacher.value,
-                items:pf.items.value.trim(),
-                urlName: pf.url.selectedOptions[0]?.textContent || '',
-                url: pf.url.value,
-                notes:pf.notes.value.trim(),
-                span:pf.span.value
-            };
-            const idx=entries.findIndex(x=>x.day===data.day&&x.period===data.period);
-            if(idx>=0) entries.splice(idx,1,data); else entries.push(data);
-            modalOverlay.style.display='none'; 
-            saveTimetable();
+        document.getElementById('pf-save').onclick = () => {
+          const data = { ... };
+          const idx = entries.findIndex(x => x.day === data.day && x.period === data.period);
+          if (idx >= 0) entries.splice(idx, 1, data);
+          else entries.push(data);
+        
+          modalOverlay.style.display = 'none';
+          saveTimetable(currentUserUid);
         };
 
         // タスク管理
@@ -655,15 +690,13 @@
         themeSwitch.onchange = e => { theme=e.target.checked?'dark':'light'; document.body.setAttribute('data-theme',theme); localStorage.setItem('theme',theme); };
 
 
-
-        async function saveTimetable() {
+        async function saveTimetable(uid) {
+          const timetableCollection = collection(db, `timetable_${uid}`);
           const entriesToSave = JSON.parse(JSON.stringify(entries));
-        
-          for (const e of entries) {
+          for (const e of entriesToSave) {
             const id = `${e.day}_${e.period}`;
-            await setDoc(doc(db, "timetable", id), e);
+            await setDoc(doc(timetableCollection, id), e);
           }
-
         }
 
       
