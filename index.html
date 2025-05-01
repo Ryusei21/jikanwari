@@ -31,35 +31,34 @@
         .week-input input { padding: 0.6rem; font-size: 1rem; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-light); color: var(--text-main); }
         #grid {
           display: grid;
-          gap: 6px; /* セル同士の余白 */
-          background-color: var(--bg-light);
+          grid-template-columns: 60px repeat(5, 1fr); /* 1列目＝時限用、残り5列＝月〜金 */
+          gap: 6px;
           padding: 1rem;
+          background-color: var(--bg-light);
           border-radius: 8px;
         }
+
         .header-cell { background: var(--accent); color: #fff; text-align: center; font-weight: bold; line-height: 1.2; }
         .period-header, .day-header { background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; }
-       .day-header {
+        .day-header {
+          background-color: #f2f2f2;
+          font-weight: bold;
           padding: 0.6rem;
-          font-size: 1rem;
-          background-color: #f3f3f3;
-          text-align: center;
           border-radius: 4px;
+          text-align: center;
+          font-size: 1rem;
         }
         .cell {
-              padding: 0.5rem;
-              border: 1px solid var(--border);
-              border-radius: 4px;
-              background-color: #ffffff;
-              box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            text-align: center;
+          padding: 0.5rem;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          background-color: #fff;
+          text-align: center;
+          min-height: 60px;
+          font-size: 0.9rem;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
+
         .cell:hover { background: rgba(0,0,0,0.05); }
         .subject {
             font-size: 1.1rem;
