@@ -727,6 +727,7 @@
               if (idx >= 0) {
                 entries.splice(idx, 1);
                 saveTimetable(currentUserUid); // ← これでFirestore→onSnapshot→描画が流れる
+                       renderMobileScrollView(); 
               }
             };
             entries.forEach((e,i)=>{
