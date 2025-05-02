@@ -465,6 +465,7 @@
         <div class="week-input">
             <input type="date" id="week-start" />
         </div>
+        <div id="grid" class="desktop-view"></div>
         <div class="schedule-grid" id="grid"></div>
         <div class="mobile-scroll" id="mobile-scroll" style="display: none;"></div>
 
@@ -765,8 +766,11 @@
                 if (idx >= 0) {
                   entries.splice(idx, 1);
                   saveTimetable(currentUserUid);
-                  renderMobileScrollView(); // ← 再描画関数名は適宜
-                    renderGrid();    
+                if (window.innerWidth <= 768) {
+                  renderMobileScrollView(); // スマホ
+                } else {
+                  renderGrid(); // PC
+                }  
                 }
               };
             });
