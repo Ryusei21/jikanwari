@@ -718,18 +718,21 @@
                 cell.innerHTML = d+'<br><small>'+ (dt.getMonth()+1)+'/'+dt.getDate()+'</small>';
             }); localStorage.setItem('weekStart',weekInput.value);
         }
-        // タイムテーブル描画
-            btn.onclick = (e) => {
-              e.stopPropagation();
-              const day = btn.dataset.day;
-              const period = btn.dataset.period;
-              const idx = entries.findIndex(x => x.day === day && x.period === period);
-              if (idx >= 0) {
-                entries.splice(idx, 1);
-                saveTimetable(currentUserUid); // ← これでFirestore→onSnapshot→描画が流れる
-                       renderMobileScrollView(); 
-              }
-            };
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+              btn.onclick = (e) => {
+                e.stopPropagation();
+            
+                const day = btn.dataset.day;
+                const period = btn.dataset.period;
+            
+                const idx = entries.findIndex(x => x.day === day && x.period === period);
+                if (idx >= 0) {
+                  entries.splice(idx, 1);
+                  saveTimetable(currentUserUid);
+                  renderMobileScrollView(); // ← 再描画関数名は適宜
+                }
+              };
+            });
             entries.forEach((e,i)=>{
                 const sel=`.cell[data-day="${e.day}"][data-period="${e.period}"]`;
                 const cell=document.querySelector(sel);
