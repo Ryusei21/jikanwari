@@ -38,8 +38,17 @@
           border-radius: 8px;
         }
 
-        .header-cell { background: var(--accent); color: #fff; text-align: center; font-weight: bold; line-height: 1.2; }
-        .period-header, .day-header { background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; }
+            .header-cell,
+            .period-header {
+              background-color: #4e54c8;
+              font-weight: bold;
+              text-align: center;
+              padding: 0.5rem;
+              border: 1px solid #ccc;
+              border-radius: 6px;
+              font-size: 0.95rem;
+              color: #333;
+            }
         .day-header {
           background-color: #4e54c8;
           font-weight: bold;
@@ -67,6 +76,10 @@
           white-space: normal;
           word-break: break-word;
           transition: background-color 0.2s;
+        }
+        .cell.has-data {
+          background-color: #fdf9e5; /* やさしい薄黄色 */
+          border-color: #e1c97a;
         }
 
         .cell:hover { background: rgba(0,0,0,0.05); }
@@ -643,6 +656,7 @@
               div.dataset.day = day;
               div.dataset.period = period;
               if (e) {
+                   div.classList.add('has-data'); // ← 入力済みなら色をつける
                 div.innerHTML = `
                   <strong>${e.subject}</strong><br>
                   ${e.teacher || ''}<br>
