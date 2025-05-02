@@ -818,10 +818,14 @@
           if (unsubscribeSnapshot) unsubscribeSnapshot(); // ← 前のリスナー停止
           unsubscribeSnapshot = onSnapshot(timetableCollection, (snapshot) => {
             entries = snapshot.docs.map(doc => doc.data());
-            renderMobileScrollView();
+            // 画面サイズに応じて描画関数を切り替える
+            if (window.innerWidth <= 768) {
+              renderMobileScrollView();
+            } else {
+              renderGrid(); // ← これを追加するだけ！
+            }
           });
         }
-
 
         
 
