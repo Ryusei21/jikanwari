@@ -617,6 +617,42 @@
           });
         }
 
+        function renderGrid() {
+          const grid = document.getElementById('grid');
+          grid.innerHTML = '';
+        
+          const days = ['月曜日','火曜日','水曜日','木曜日','金曜日'];
+          const periods = ['1','2','3','4','5','6','7'];
+        
+          // ヘッダー
+          grid.innerHTML += `<div class="header-cell"></div>`;
+          days.forEach(day => {
+            grid.innerHTML += `<div class="header-cell">${day}</div>`;
+          });
+        
+          periods.forEach(period => {
+            grid.innerHTML += `<div class="period-header">${period}限</div>`;
+            days.forEach(day => {
+              const e = entries.find(x => x.day === day && x.period === period);
+              const div = document.createElement('div');
+              div.className = 'cell';
+              div.dataset.day = day;
+              div.dataset.period = period;
+              if (e) {
+                div.innerHTML = `
+                  <strong>${e.subject}</strong><br>
+                  ${e.teacher || ''}<br>
+                  ${e.items || ''}
+                  ${e.notes ? `<i>${e.notes}</i>` : ''}
+                `;
+              }
+              div.onclick = onCellClick;
+              grid.appendChild(div);
+            });
+          });
+        }
+
+
 
 
         let tasks = JSON.parse(localStorage.getItem('tasks'))||[];
@@ -730,6 +766,7 @@
                   entries.splice(idx, 1);
                   saveTimetable(currentUserUid);
                   renderMobileScrollView(); // ← 再描画関数名は適宜
+                    renderGrid();    
                 }
               };
             });
