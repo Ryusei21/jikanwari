@@ -683,17 +683,26 @@
       let teachers = [];
       let urls = [];
 
-      async function initializeSettings(uid) {
-        tasks = await loadTasksFromFirestore(uid);
-        teachers = await loadTeachersFromFirestore(uid);
-        urls = await loadUrlsFromFirestore(uid)||[];
-        weekInput.value = await loadWeekStartFromFirestore(uid) || '';
-        theme = await loadThemeFromFirestore(uid) || 'light';
-        document.body.setAttribute('data-theme', theme);
-        themeSwitch.checked = (theme === 'dark');
-        renderSettingsLists();
-        renderSelectOptions();
-      }
+        async function initializeSettings(uid) {
+          try {
+            await Promise.all([
+              loadTasksFromFirestore(uid),
+              loadTeachersFromFirestore(uid),
+              loadUrlsFromFirestore(uid),
+            ]);
+            weekInput.value = await loadWeekStartFromFirestore(uid) || '';
+            theme = await loadThemeFromFirestore(uid) || 'light';
+            document.body.setAttribute('data-theme', theme);
+            themeSwitch.checked = (theme === 'dark');
+            renderSettingsLists();
+            renderSelectOptions();
+          } catch (error) {
+            console.error("設定初期化エラー:", error);
+            // エラーが発生した場合の処理（例: エラーメッセージ表示）
+            renderSettingsLists(); // 空のリストを表示するため、エラー発生時にも呼び出す
+            renderSelectOptions();
+          }
+        }
         // モーダル要素参照
         const pf = {
             day: document.getElementById('pf-day'),
@@ -1060,14 +1069,16 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      async function loadTeachersFromFirestore(uid) {
-      const teachersCollection = collection(db, `teachers_${uid}`);
-      const snapshot = await getDocs(teachersCollection);
-
-      teachers = snapshot.docs.map((doc) => doc.data().name);
-      renderSettingsLists(); // 教員リストを再描画
-      renderSelectOptions(); // 教員選択肢を再描画
-    }
+        async function loadTeachersFromFirestore(uid) {
+          try {
+            const teachersCollection = collection(db, `teachers_${uid}`);
+            const snapshot = await getDocs(teachersCollection);
+            teachers = snapshot.docs.map((doc) => doc.data().name);
+          } catch (error) {
+            console.error("教員データのロードエラー:", error);
+            teachers = []; // エラー発生時は空配列で初期化
+          }
+        }
 
     async function saveUrlsToFirestore(uid) {
       const urlsCollection = collection(db, `urls_${uid}`);
@@ -1084,20 +1095,17 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    async function loadUrlsFromFirestore(uid) {
+        async function loadUrlsFromFirestore(uid) {
           try {
-            const collectionRef = collection(db, 'urls');
-            const snapshot = await getDocs(collectionRef);
-            const urlsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            return urlsData;
+            const urlsCollection = collection(db, `urls_${uid}`);
+            const snapshot = await getDocs(urlsCollection);
+            urls = snapshot.docs.map((doc) => doc.data()) || [];
+            if (!Array.isArray(urls)) urls = []; // 念のため配列であることを保証
           } catch (error) {
-            console.error("Firestoreからのデータロードエラー:", error);
-            return []; // エラー発生時は空の配列を返すなどの安全な処理
+            console.error("URLデータのロードエラー:", error);
+            urls = []; // エラー発生時は空配列で初期化
           }
-
-      renderSettingsLists(); // URLリストを再描画
-      renderSelectOptions(); // URL選択肢を再描画
-    }
+        }
 
 
         // 設定とテーマトグル
