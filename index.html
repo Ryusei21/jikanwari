@@ -713,24 +713,45 @@
         let entries = [];
 
         // 設定パネル初期化
-        function renderSettingsLists() {
-            const tList = document.getElementById('teacher-list');
-            tList.innerHTML = '';
-            teachers.forEach((t,i)=>{
-                const li = document.createElement('li'); li.textContent = t;
-                const btn = document.createElement('button'); btn.textContent='×';
-                btn.onclick = () => { teachers.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
-                li.append(btn); tList.append(li);
-            });
-            const uList = document.getElementById('url-list');
-            uList.innerHTML = '';
-            urls.forEach((u,i)=>{
-                const li = document.createElement('li'); li.textContent = u.name;
-                const btn = document.createElement('button'); btn.textContent='×';
-                btn.onclick = () => { urls.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
-                li.append(btn); uList.append(li);
-            });
-        }
+            function renderSettingsLists() {
+              const tList = document.getElementById('teacher-list');
+              tList.innerHTML = '';
+              if (Array.isArray(teachers)) {
+                teachers.forEach((t, i) => {
+                  const li = document.createElement('li');
+                  li.textContent = t;
+                  const btn = document.createElement('button');
+                  btn.textContent = '×';
+                  btn.onclick = () => {
+                    teachers.splice(i, 1);
+                    saveSettings();
+                    renderSettingsLists();
+                    renderSelectOptions();
+                  };
+                  li.append(btn);
+                  tList.append(li);
+                });
+              }
+            
+              const uList = document.getElementById('url-list');
+              uList.innerHTML = '';
+              if (Array.isArray(urls)) {
+                urls.forEach((u, i) => {
+                  const li = document.createElement('li');
+                  li.textContent = u.name;
+                  const btn = document.createElement('button');
+                  btn.textContent = '×';
+                  btn.onclick = () => {
+                    urls.splice(i, 1);
+                    saveSettings();
+                    renderSettingsLists();
+                    renderSelectOptions();
+                  };
+                  li.append(btn);
+                  uList.append(li);
+                });
+              }
+            }
         document.getElementById('add-teacher').onclick = async () => {
           const v = document.getElementById('new-teacher').value.trim();
           if (!v) return;
@@ -967,13 +988,14 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // Firestore からタスクを読み込み
-        async function loadTasksFromFirestore(uid) {
-          const tasksCollection = collection(db, `tasks_${uid}`);
-          const snapshot = await getDocs(tasksCollection);
-
-          tasks = snapshot.docs.map((doc) => doc.data());
-          renderTasks(); // タスクを再描画
-        }
+            async function loadUrlsFromFirestore(uid) {
+              const urlsCollection = collection(db, `urls_${uid}`);
+              const snapshot = await getDocs(urlsCollection);
+            
+              urls = snapshot.docs.map((doc) => doc.data());
+              renderSettingsLists(); // URLリストを再描画
+              renderSelectOptions(); // URL選択肢を再描画
+            }
 
         // Firestore のタスクをリアルタイムで同期
         function setupTaskRealtimeSync(uid) {
@@ -1022,10 +1044,17 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
                 // 初期化時にタスクを Firestore から読み込み
-        async function initializeTasks(uid) {
-          await loadTasksFromFirestore(uid); // Firestore からタスクを読み込む
-          renderTasks(); // タスクを描画
-        }
+            async function initializeSettings(uid) {
+              tasks = await loadTasksFromFirestore(uid);
+              teachers = await loadTeachersFromFirestore(uid);
+              await loadUrlsFromFirestore(uid);
+              weekInput.value = await loadWeekStartFromFirestore(uid) || '';
+              theme = await loadThemeFromFirestore(uid) || 'light';
+              document.body.setAttribute('data-theme', theme);
+              themeSwitch.checked = (theme === 'dark');
+              renderSettingsLists();
+              renderSelectOptions();
+            }
 
         async function saveTeachersToFirestore(uid) {
         const teachersCollection = collection(db, `teachers_${uid}`);
@@ -1045,6 +1074,7 @@ window.addEventListener('DOMContentLoaded', () => {
       async function loadTeachersFromFirestore(uid) {
       const teachersCollection = collection(db, `teachers_${uid}`);
       const snapshot = await getDocs(teachersCollection);
+          teachers = snapshot.empty ? [] : snapshot.docs.map((doc) => doc.data());
 
       teachers = snapshot.docs.map((doc) => doc.data().name);
       renderSettingsLists(); // 教員リストを再描画
