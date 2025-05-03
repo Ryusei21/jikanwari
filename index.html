@@ -1074,6 +1074,17 @@ window.addEventListener('DOMContentLoaded', () => {
       renderSettingsLists(); // URLリストを再描画
       renderSelectOptions(); // URL選択肢を再描画
     }
+        // すべての削除ボタンに対して処理を追加
+            document.addEventListener("click", function (event) {
+              if (event.target.classList.contains("delete-btn")) {
+                event.stopPropagation(); // ← これが重要：親(td)へのクリックイベントを無効化
+                const td = event.target.closest("td");
+                const subject = td.querySelector(".subject").textContent;
+                const teacher = td.querySelector(".teacher").textContent;
+                deleteItem(td, subject, teacher); // 削除処理
+              }
+            });
+
 
 
         // 設定とテーマトグル
