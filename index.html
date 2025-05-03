@@ -6,11 +6,11 @@
     <title>時間割マネージャー</title>
     <style>
         :root {
-          --text-main: #333;
-          --bg-base: #f9f9f9;
-          --cell-border: #ccc;
-          --cell-filled-bg: #eef5f9;
-          --cell-filled-border: #3a87c4;
+          --bg-light: #ffffff;
+          --bg-dark: #f2f2f2;
+          --text-main: #333333;
+          --accent: #4e54c8;
+          --border: #cccccc;
         }
 
 
@@ -78,8 +78,7 @@
           transition: background-color 0.2s;
         }
         .cell.has-data {
-          background-color: #fdf9e5; /* やさしい薄黄色 */
-          border-color: #e1c97a;
+          background-color: #c9ccff;                            
         }
 
         .cell:hover { background: rgba(0,0,0,0.05); }
@@ -90,20 +89,21 @@
             color: var(--accent);
             word-wrap: break-word;
             line-height: 1.2;
+        }                
+        .cell strong {
+          display: block;
+          font-weight: bold;
+          font-size: 1.05rem;
+          margin-bottom: 0.3rem;
         }
-            .cell strong {
-              font-weight: 600;
-              font-size: 1.05rem;
-              color: var(--accent);
-              margin-bottom: 0.2rem;
-            }
-            
-            .cell i {
-              font-style: italic;
-              font-size: 0.8rem;
-              color: #777;
-              margin-top: 0.2rem;
-            }
+        
+        .cell i {
+          display: block;
+          font-style: italic;
+          color: #777;
+          font-size: 0.8rem;
+          margin-top: 0.2rem;
+        }
 
 
         .info {
