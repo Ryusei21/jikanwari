@@ -987,16 +987,6 @@ window.addEventListener('DOMContentLoaded', () => {
           }
         }
 
-        // Firestore からタスクを読み込み
-            async function loadUrlsFromFirestore(uid) {
-              const urlsCollection = collection(db, `urls_${uid}`);
-              const snapshot = await getDocs(urlsCollection);
-            
-              urls = snapshot.docs.map((doc) => doc.data());
-              renderSettingsLists(); // URLリストを再描画
-              renderSelectOptions(); // URL選択肢を再描画
-            }
-
         // Firestore のタスクをリアルタイムで同期
         function setupTaskRealtimeSync(uid) {
           const tasksCollection = collection(db, `tasks_${uid}`);
