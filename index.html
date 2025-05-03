@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>時間割マネージャー</title>
+    <style>
+        :root {
+          --bg-light: #ffffff;
+          --bg-dark: #f2f2f2;
+          --text-main: #333333;
+          --accent: #4e54c8;
+          --border: #cccccc;
+        }
+
+
+
+        [data-theme="dark"] {
+            --bg-light: #1f1f2e;
+            --bg-alt: #2b2b3c;
+            --text-main: #ececec;
+            --text-secondary: #bbbbbb;
+            --accent: #ff79c6;
+            --border: #444444;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body { margin: 0; font-family: var(--font-base); background: var(--bg-alt); color: var(--text-main); position: static; } 
+        header { background: var(--accent); color: #fff; padding: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 1.5rem; position: static; }
+        .container { max-width: 1200px; margin: auto; padding: 1rem; display: grid; grid-template-rows: auto auto 1fr auto; gap: 1rem; }
+        .week-input { text-align: center; }
+        .week-input input { padding: 0.6rem; font-size: 1rem; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-light); color: var(--text-main); }
+        #grid {
+          display: grid;
+          grid-template-columns: 60px repeat(5, 1fr); /* 1列目＝時限用、残り5列＝月〜金 */
+          gap: 6px;
+          padding: 1rem;
+          background-color: var(--bg-light);
+          border-radius: 8px;
+        }
+
+        .header-cell { background: var(--accent); color: #fff; text-align: center; font-weight: bold; line-height: 1.2; }
+        .period-header, .day-header { background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; }
+        .day-header {
+          background-color: var(-accent);
+          color: #fff;
+          font-weight: bold;
+          padding: 0.6rem;
+          border-radius: 4px;
+          text-align: center;
+          font-size: 1rem;
+        }
+        .cell {
+          position:relative;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: 0.6rem;
+          background-color: var(--bg-light);
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          font-size: 0.95rem;
+          line-height: 1.4;
+          text-align: center;
+          min-height: 100px;
+          word-break: break-word;
+          white-space: normal;
+          color:var(--text-main)
+        }
+
+        .cell:hover { background: rgba(0,0,0,0.05); }
+        .cell:hover .delete-btn { opacity: 1; }
+        .subject {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            color: var(--accent);
+            word-wrap: break-word;
+            line-height: 1.2;
+        }
+        .cell strong {
+          display: block;
+          font-weight: bold;
+          font-size: 1.05rem;
+          margin-bottom: 0.3rem;
+        }
+        
+        .cell i {
+          display: block;
+          font-style: italic;
+          color: #777;
+          font-size: 0.8rem;
+          margin-top: 0.2rem;
+        }
+        .cell empty {
+          background-color: var(--bg-light);
+        }
+        [data-theme="dark"] .cell.empty {
+          background-color: var(--bg-alt);
+        }
+
+
+        .info {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            word-wrap: break-word;
+            line-height: 1.2;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #e74c3c;
+            border: none;
+            color: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .cell:hover .delete-btn {
+            opacity: 1;
+        }
+        .tasks { background: var(--bg-light); padding: 1rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .tasks h3 { margin: 0 0 0.5rem; color: var(--accent); }
+        .task-input { display: flex; gap: 0.5rem; }
+        .task-input textarea { flex: 1; padding: 0.8rem; border: 1px solid var(--border); border-radius: 4px; resize: vertical; height: 60px; font-size: 1rem; background: var(--bg-light); color: var(--text-main); }
+        .task-input button.add { padding: 0 1.2rem; background: var(--accent); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        .tasks ul { list-style: none; padding: 0; margin: 0.5rem 0 0; }
+        .tasks li { display: flex; align-items: center; margin-bottom: 0.6rem; font-size: 1rem; }
+        .tasks li input[type="checkbox"] { width: 20px; height: 20px; margin-right: 0.8rem; }
+        .tasks li button.delete-task { margin-left: auto; background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.9rem; }
+        /* モーダル */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 1000;}
+        .modal { background: var(--bg-light); padding: 1.5rem; border-radius: 8px; width: 360px; max-width: 90%; }
+        .modal h2 { margin: 0 0 1rem; color: var(--accent); font-size: 1.2rem; }
+        .modal label { display: block; margin: 0.5rem 0 0.2rem; font-size: 0.9rem; }
+        .modal input, .modal textarea, .modal select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 4px; font-size: 1rem; background: var(--bg-light); color: var(--text-main); }
+        .modal textarea { resize: vertical; height: 60px; }
+        .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
+        .actions button { flex: 1; padding: 0.6rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        .actions .save { background: var(--accent); color: #fff; }
+        .actions .cancel { background: var(--border); color: var(--text-main); }
+        /* 設定パネル */
+        #settings-panel {
+            display: none;
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            min-width: 250px;
+            color:var(--text-main)
+        }
+        #settings-panel h3 { margin-top: 0; color: var(--accent); font-size: 1rem; }
+        #settings-panel ul { list-style: none; padding: 0; margin: 0.5rem 0; max-height: 120px; overflow-y: auto; font-size: 0.9rem; }
+        #settings-panel li { display: flex; align-items: center; margin-bottom: 0.4rem; font-size: 0.9rem; }
+        #settings-panel li button { margin-left: auto; background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 0.9rem; }
+        #settings-panel input[type="text"], #settings-panel input[type="url"] { width: calc(100% - 60px); padding: 0.4rem; font-size: 0.9rem; margin-right: 0.5rem; }
+        #settings-panel button.add-item { padding: 0.4rem; font-size: 0.9rem; background: var(--accent); color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(26px); }
+        /* PC版のGoogleログインボタンのスタイル */
+        #auth-controls {
+          position: fixed;
+          top: 1rem; /* ウィンドウの下から1remに配置 */
+          right: 1rem; /* 必要に応じて左から1remに配置 */
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          font-size: 0.85rem;
+          z-index: 9999; /* 他の要素よりも高い値を設定 */
+          background: rgba(255, 255, 255, 0.95);
+          padding: 0.5rem 0.75rem;
+          border-radius: 12px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          color: #333;
+        }
+        /* スマホ版のauth-controlsのスタイル */
+        @media (max-width: 768px) {
+          #auth-controls {
+            position: static; /* 固定位置を解除 */
+            top: auto;
+            right: auto;
+            left: auto;
+            bottom: auto;
+            display: block; /* 必要に応じて変更 */
+            background: none; /* 背景をリセット */
+            padding: 0; /* パディングをリセット */
+            box-shadow: none; /* ボックスシャドウをリセット */
+          }
+        }
+                
+        #auth-controls button {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          background-color: white;
+          color: #444;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 0.35rem 0.75rem;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: background-color 0.2s, box-shadow 0.2s;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        #auth-controls button:hover {
+          background-color: #f3f3f3;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        
+        #auth-controls img {
+          width: 18px;
+          height: 18px;
+        }
+
+        
+        #settingsBtn {
+              position: fixed;
+              bottom: 1.5rem;
+              right: 1.5rem;
+              width: 48px;
+              height: 48px;
+              background-color: #4e54c8;
+              color: white;
+              border: none;
+              border-radius: 50%;
+              font-size: 24px;
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+              cursor: pointer;
+              z-index: 999;
+              transition: transform 0.2s, background-color 0.2s;
+            }
+            
+            #settingsBtn:hover {
+              background-color: #3e44b0;
+              transform: scale(1.1);
+            }
+
+
+
+
+        /* スマホ用スタイル */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+                grid-template-rows: auto auto auto 1fr auto;
+            }
+            header {
+              position : static;
+                font-size: 1.2rem;
+                padding: 0.5rem;
+            }
+            .schedule-grid {
+                grid-template-columns: 40px repeat(5, 1fr);
+                grid-auto-rows: 80px;
+                gap: 4px;
+                padding: 4px;
+                display:none;
+            }
+            .header-cell {
+              padding: 0.5rem;
+              margin: 0.2rem;
+              font-size: 1rem;
+              text-align: center;
+              background-color: #f0f0f0;
+              border-radius: 4px;
+            }
+            
+            .period-header, .day-header {
+              padding: 0.5rem;
+              margin: 0.2rem;
+              font-size: 1rem;
+              text-align: center;
+              background-color: #f0f0f0;
+              border-radius: 4px;
+            }
+            .day-header {
+            background-color: var(--accent);
+            color: #fff;
+            font-weight: bold;
+            padding: 0.6rem;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 1rem;
+          }
+            .cell {
+                padding: 0.2rem;
+            }
+            .subject {
+                font-size: 0.9rem;
+            }
+            .info {
+                font-size: 0.75rem;
+            }
+            .task-input {
+                flex-direction: column;
+            }
+            .task-input textarea {
+                margin-bottom: 0.5rem;
+                height: auto;
+                font-size: 0.9rem;
+            }
+            .task-input button.add {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+            .tasks li {
+                font-size: 0.9rem;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .tasks li input[type="checkbox"] {
+                margin-right: 0;
+                margin-bottom: 0.2rem;
+            }
+            .modal {
+                padding: 1rem;
+                width: 95%;
+            }
+            .modal h2 {
+                font-size: 1rem;
+            }
+            .modal label {
+                font-size: 0.8rem;
+            }
+            .modal input, .modal textarea, .modal select {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+            .actions button {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+            #settings-panel {
+                top: auto;
+                bottom: 100%;
+                right: 0;
+                left: auto;
+                transform: translateX(0);
+                min-width: 90%;
+            }
+            #settings-panel h3 {
+                font-size: 0.9rem;
+            }
+            #settings-panel ul {
+                font-size: 0.8rem;
+            }
+            #settings-panel li {
+                font-size: 0.8rem;
+            }
+            #settings-panel input[type="text"],
+            #settings-panel input[type="url"] {
+                font-size: 0.8rem;
+                padding: 0.3rem;
+            }
+            #settings-panel button.add-item {
+                font-size: 0.8rem;
+                padding: 0.3rem;
+            }
+        .schedule-grid {
+            display: none; /* PCグリッドは非表示に */
+        }
+    
+        .mobile-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 1rem;
+            padding: 1rem;
+        }
+    
+        .day-group {
+            flex: 0 0 90%;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            scroll-snap-align: start;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            min-width: 280px;
+        }
+    
+        .day-group h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: var(--accent);
+        }
+    
+        .class-entry {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+    
+        .class-entry strong {
+            color: var(--text-main);
+        }
+        #auth-controls {
+          position: fixed;
+          bottom: 0.5rem; /* bottom に配置 */
+          left: 0.5rem; /* 必要に応じて left または right を調整 */
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
+          font-size: 0.85rem;
+          z-index: 3000;
+          background: rgba(255, 255, 255, 0.95);
+          margin: 0;
+          padding: 0.3rem 0.5rem; /* パディングを小さくする */
+          border-radius: 12px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          color: #333;
+          max-width: 300px; /* 最大幅を設定 */
+          max-height: 50px; /* 最大高さを設定 */
+          white-space: nowrap; /* テキストを1行に制限 */
+          overflow: hidden; /* はみ出した部分を隠す */
+          text-overflow: ellipsis; /* 省略記号を表示 */
+        }
+
+        
+        
+        #auth-controls button:hover {
+            background-color: #3e44b0; /* ホバー時の背景色 */
+            transform: scale(1.01)/* ホバー時に少し拡大 */
+          }
+        
+      #auth-controls img {
+        width: 24px; /* アイコンのサイズを調整 */
+        height: 24px;
+      }
+
+      #auth-controls button {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.5rem 1rem; /* パディングを調整 */
+          background-color: #4e54c8; /* 背景色 */
+          color: white; /* テキスト色 */
+          border: none;
+          border-radius: 8px; /* 角を丸くする */
+          font-size: 0.85rem; /* フォントサイズ */
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* ボックスシャドウ */
+          cursor: pointer;
+          transition: transform 0.2s, background-color 0.2s;
+          white-space: nowrap; /* テキストを1行に制限 */
+        }
+
+        
+        #settingsBtn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 48px;
+            height: 48px;
+            background-color: #4e54c8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            z-index: 999;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        
+        #settingsBtn:hover {
+            background-color: #3e44b0;
+            transform: scale(1.1);
+        } 
+      }
+    </style>
+</head>
+<body data-theme="light">
+        <div id="auth-controls">
+          <span id="user-name">未ログイン</span>
+          <button id="login-button">Googleでログイン</button>
+          <button id="logout-button" style="display: none;">ログアウト</button>
+        </div>
+        <header>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button id="settingsBtn" class="settings-button">⚙️</button>
+        
+
+        <div id="settings-panel" onclick="event.stopPropagation()">
+            <h3>ダークモード</h3>
+            <label class="switch">
+                <input type="checkbox" id="theme-switch">
+                <span class="slider"></span>
+            </label>
+            <h3>教員リスト</h3>
+            <ul id="teacher-list"></ul>
+            <div><input type="text" id="new-teacher" placeholder="新しい教員名" /><button class="add-item" id="add-teacher">追加</button></div>
+            <h3>しらばすURLリスト</h3>
+            <ul id="url-list"></ul>
+            <div>
+                <input type="text" id="new-url-name" placeholder="URLの名前" />
+                <input type="url" id="new-url" placeholder="URLを入力" />
+                <button class="add-item" id="add-url">追加</button>
+            </div>
+        </div>
+        </div>
+
+    </header>
+    <div class="container">
+        <div class="week-input">
+            <input type="date" id="week-start" />
+        </div>
+        <div class="schedule-grid" id="grid"></div>
+        <div class="mobile-scroll" id="mobile-scroll" style="display: none;"></div>
+
+        <div class="tasks">
+            <h3>タスク・提出物</h3>
+            <div class="task-input">
+                <textarea id="task-input" placeholder="タスクを入力（2行まで）"></textarea>
+                <button class="add" id="add-task">追加</button>
+            </div>
+            <ul id="task-list"></ul>
+        </div>
+    </div>
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="edit-modal" onclick="event.stopPropagation()">
+            <h2>授業編集</h2>
+            <label>曜日: <span id="pf-day"></span></label>
+            <label>コマ: <span id="pf-period"></span></label>
+            <label for="pf-subject">科目名</label><input type="text" id="pf-subject" tabindex="1" />
+            <label for="pf-teacher">教員</label>
+            <select id="pf-teacher" tabindex="2"></select>
+            <label for="pf-items">持ち物（自由入力）</label>
+            <input type="text" id="pf-items" tabindex="3" />
+            <label for="pf-url">しらばすURL</label>
+            <select id="pf-url" tabindex="4"></select>
+            <label for="pf-notes">連絡事項</label><textarea id="pf-notes" tabindex="5"></textarea>
+            <label for="pf-span">連続コマ</label><select id="pf-span" tabindex="6"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+            <div class="actions">
+                <button class="save" id="pf-save" tabindex="7">保存</button>
+                <button class="cancel" id="pf-cancel" tabindex="8">キャンセル</button>
+            </div>
+        </div>
+    </div>
+    <script type="module">
+
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, doc, getDocs, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+
+        
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyArgJAG3fnR72vYSU7VvA-EuZX1nYz3Od4",
+          authDomain: "jikanmanager.firebaseapp.com",
+          projectId: "jikanmanager",
+          storageBucket: "jikanmanager.firebasestorage.app",
+          messagingSenderId: "431451778118",
+          appId: "1:431451778118:web:649adadee60a2576fc2e47"
+        };
+
+              
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        
+        const loginBtn = document.getElementById('login-button');
+        const logoutBtn = document.getElementById('logout-button');
+        const userNameSpan = document.getElementById('user-name');
+        let currentUserUid = null;
+        
+        loginBtn.onclick = () => {
+          signInWithPopup(auth, provider)
+            .then((result) => {
+              const user = result.user;
+              updateLoginUI(user);
+              startAppForUser(user.uid);
+            })
+            .catch((error) => {
+              alert("ログインに失敗しました：" + error.message);
+            });
+        };
+        
+        logoutBtn.onclick = () => {
+          auth.signOut().then(() => {
+            location.reload(); // ログアウト後はリロードしてUI初期化
+          });
+        };
+        
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            currentUserUid = user.uid;
+            updateLoginUI(user);
+            await initializeSettings(currentUserUid);
+            startAppForUser(currentUserUid);
+          } else {
+            updateLoginUI(null);
+          }
+        });
+        
+        function updateLoginUI(user) {
+          if (user) {
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'inline-block';
+            userNameSpan.textContent = `${user.displayName} さんでログイン中`;
+          } else {
+            loginBtn.style.display = 'inline-block';
+            logoutBtn.style.display = 'none';
+            userNameSpan.textContent = '未ログイン';
+          }
+        }
+
+        const db = getFirestore(app);
+        
+        const days = ['月','火','水','木','金'];
+        const grid = document.getElementById('grid');
+        const weekInput = document.getElementById('week-start');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settings-panel');
+
+        if (settingsBtn && settingsPanel) {
+            settingsBtn.onclick = (event) => {
+                event.stopPropagation();
+                const isVisible = settingsPanel.style.display === 'block';
+                settingsPanel.style.display = isVisible ? 'none' : 'block';
+            };
+
+            // ページ全体をクリックしたときにパネルを閉じる
+            document.addEventListener('click', () => {
+                settingsPanel.style.display = 'none';
+            });
+        } else {
+            console.error('設定ボタンまたは設定パネルが見つかりません');
+        }
+        const themeSwitch = document.getElementById('theme-switch');
+
+
+        function renderMobileScrollView() {
+        const container = document.getElementById('mobile-scroll');
+        container.innerHTML = '';
+
+        const days = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日'];
+        const baseDate = new Date(weekInput.value);
+
+        days.forEach((day, index) => {
+          const section = document.createElement('div');
+          section.className = 'day-group';
+
+          // 日付を計算
+          const currentDate = new Date(baseDate);
+          currentDate.setDate(baseDate.getDate() + index);
+          const dateString = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
+
+          section.innerHTML = `<h3>${day} (${dateString})</h3>`;
+
+          const dayEntries = entries.filter(e => e.day === day);
+          dayEntries.sort((a, b) => parseInt(a.period) - parseInt(b.period));
+
+          dayEntries.forEach(e => {
+            const div = document.createElement('div');
+            div.className = 'class-entry';
+            div.innerHTML = `
+              <strong>${e.subject}</strong>
+              ${e.teacher || ''}<br>
+              ${e.items || ''}
+              ${e.notes ? `<i>${e.notes}</i>` : ''}
+            `;
+            section.appendChild(div);
+          });
+
+          container.appendChild(section);
+        });
+      }
+
+
+
+      let tasks = [];
+      let teachers = [];
+      let urls = [];
+
+        async function initializeSettings(uid) {
+          try {
+            await Promise.all([
+              loadTasksFromFirestore(uid),
+              loadTeachersFromFirestore(uid),
+              loadUrlsFromFirestore(uid),
+            ]);
+            weekInput.value = await loadWeekStartFromFirestore(uid) || '';
+            theme = await loadThemeFromFirestore(uid) || 'light';
+            document.body.setAttribute('data-theme', theme);
+            themeSwitch.checked = (theme === 'dark');
+            renderSettingsLists();
+            renderSelectOptions();
+          } catch (error) {
+            console.error("設定初期化エラー:", error);
+            // エラーが発生した場合の処理（例: エラーメッセージ表示）
+            renderSettingsLists(); // 空のリストを表示するため、エラー発生時にも呼び出す
+            renderSelectOptions();
+          }
+        }
+        // モーダル要素参照
+        const pf = {
+            day: document.getElementById('pf-day'),
+            period: document.getElementById('pf-period') || { textContent: '' },
+            subject: document.getElementById('pf-subject'),
+            teacher: document.getElementById('pf-teacher'),
+            items: document.getElementById('pf-items'),
+            url: document.getElementById('pf-url'),
+            notes: document.getElementById('pf-notes'),
+            span: document.getElementById('pf-span')
+        };
+
+        // グローバルスコープで entries を宣言
+        let entries = [];
+
+        // 設定パネル初期化
+        function renderSettingsLists() {
+          const tList = document.getElementById('teacher-list');
+          tList.innerHTML = '';
+          teachers.forEach((t,i)=>{
+            const li = document.createElement('li'); li.textContent = t;
+            const btn = document.createElement('button'); btn.textContent='×';
+            btn.onclick = () => { teachers.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
+            li.append(btn); tList.append(li);
+          });
+          const uList = document.getElementById('url-list');
+          uList.innerHTML = '';
+          urls.forEach((u, i) => { // 初期化された urls を直接使用
+            const li = document.createElement('li'); li.textContent = u.name;
+            const btn = document.createElement('button'); btn.textContent='×';
+            btn.onclick = () => { urls.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
+            li.append(btn); uList.append(li);
+          });
+        }
+        
+        // urls をロードする関数 (例)
+        async function loadUrls() {
+          // ここで Firestore から urls を取得する処理などを記述
+          // 例: const fetchedUrls = await getUrlsFromFirestore();
+          // if (fetchedUrls) {
+          //   urls = fetchedUrls;
+          //   renderSettingsLists();
+          //   renderSelectOptions();
+          // } else {
+          //   console.error("URLのロードに失敗しました");
+          // }
+          // ローカルストレージから読み込む場合も同様
+          const storedUrls = localStorage.getItem('urls');
+          if (storedUrls) {
+            urls = JSON.parse(storedUrls);
+            renderSettingsLists();
+            renderSelectOptions();
+          } else {
+            urls = []; // ローカルストレージにもない場合は空配列で初期化
+            renderSettingsLists();
+            renderSelectOptions();
+          }
+        }
+        document.getElementById('add-teacher').onclick = async () => {
+          const v = document.getElementById('new-teacher').value.trim();
+          if (!v) return;
+          teachers.push(v);
+          document.getElementById('new-teacher').value = '';
+          await saveSettings();
+          renderSettingsLists();
+          renderSelectOptions();
+        };
+        document.getElementById('add-url').onclick = () => {
+            const name = document.getElementById('new-url-name').value.trim();
+            const link = document.getElementById('new-url').value.trim();
+            if (!name || !link) return;
+            urls.push({ name, link });
+            document.getElementById('new-url-name').value='';
+            document.getElementById('new-url').value='';
+            saveSettings(); renderSettingsLists(); renderSelectOptions();
+        };
+        async function saveSettings() {
+        if (currentUserUid) {
+          await saveTeachersToFirestore(currentUserUid);
+          await saveUrlsToFirestore(currentUserUid);
+        }
+      }
+
+    // ページロード時に初期化
+    window.addEventListener('DOMContentLoaded', () => {
+      if (currentUserUid) {
+        initializeSettings(currentUserUid);
+      }
+    });
+
+        // モーダルの選択肢生成
+        function renderSelectOptions() {
+            // 教員
+            pf.teacher.innerHTML = '<option value="">-- 教員を選択 --</option>';
+            teachers.forEach(t=> { const o = document.createElement('option'); o.value=o.textContent=t; pf.teacher.append(o);} );
+            // URL
+            pf.url.innerHTML = '<option value="">-- URLを選択 --</option>';
+            urls.forEach(u=> { const o = document.createElement('option'); o.value = u.link; o.textContent = u.name; pf.url.append(o);} );
+        }
+
+        // グリッド初期化と更新
+        function initGrid() {
+            grid.innerHTML = '';
+            grid.appendChild(createCell('header-cell',''));
+            days.forEach(d=>grid.appendChild(createCell('header-cell day-header',d+'<br><small>--/--</small>')));
+            for(let p=1;p<=5;p++){
+                grid.appendChild(createCell('header-cell period-header',p+'限'));
+                days.forEach(d=>{ const c=createCell('cell',''); c.dataset.day=d+'曜日'; c.dataset.period=p; c.addEventListener('click',onCellClick); grid.appendChild(c); });
+            }
+        }
+        function createCell(cls,html){ const el=document.createElement('div'); el.className=cls; el.innerHTML=html; return el; }
+        async function updateHeaders() {
+          if (!weekInput.value) return;
+          const base = new Date(weekInput.value);
+          days.forEach((d, i) => {
+            const cell = grid.children[i + 1];
+            const dt = new Date(base);
+            dt.setDate(base.getDate() + i);
+            cell.innerHTML = d + '<br><small>' + (dt.getMonth() + 1) + '/' + dt.getDate() + '</small>';
+          });
+
+          // Firestore に保存
+          if (currentUserUid) {
+            try {
+              await saveWeekStartToFirestore(currentUserUid, weekInput.value);
+            } catch (error) {
+              console.error('週の開始日の保存中にエラーが発生しました:', error);
+            }
+          }
+        }
+        // タイムテーブル描画
+        function renderTimetable() {
+          document.querySelectorAll('.cell').forEach(c => {
+              c.innerHTML = ''; // セルを初期化
+              c.style.gridRowEnd = 'span 1';
+              c.style.display = 'flex';
+              c.classList.add('empty'); // 初期状態では空セルとして扱う
+              c.classList.remove('filled'); // filled クラスを削除（必要に応じて）
+          });
+
+          entries.forEach((e, i) => {
+              const sel = `.cell[data-day="${e.day}"][data-period="${e.period}"]`;
+              const cell = document.querySelector(sel);
+              if (cell) {
+                  cell.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent') + '22';
+                  let html = `
+                      <div class="subject">${e.subject}</div>
+                      <div class="info">${e.teacher || ''}</div>
+                      <div class="info">${e.items || ''}</div>
+                  `;
+                  if (e.url) {
+                      html += `<div class="info"><a href="${e.url}" target="_blank">${e.urlName}</a></div>`;
+                  }
+                  if (e.notes) {
+                      html += `<div class="info"><i>${e.notes}</i></div>`;
+                  }
+                  cell.innerHTML = html;
+                  cell.classList.remove('empty'); // セルが空でなくなる
+                  cell.classList.add('filled'); // filled クラスを追加（必要に応じて）
+
+                  // 削除ボタンを追加
+                  const btn = document.createElement('button');
+                  btn.textContent = '×';
+                  btn.className = 'delete-btn';
+                  btn.onclick = () => {
+                      entries.splice(i, 1); // エントリを削除
+                      cell.innerHTML = ''; // セルを空にする
+                      cell.style.background = ''; // 背景色をリセット
+                      cell.classList.add('empty'); // 空セルのクラスを追加
+                      cell.classList.remove('filled'); // filled クラスを削除（必要に応じて）
+                      saveTimetable(currentUserUid); // Firestoreに保存
+                  };
+                  cell.append(btn);
+
+                  const spanNum = parseInt(e.span);
+                  if (spanNum > 1) {
+                      cell.style.gridRowEnd = 'span ' + spanNum;
+                      for (let k = 1; k < spanNum; k++) {
+                          const c2 = document.querySelector(`.cell[data-day="${e.day}"][data-period="${parseInt(e.period) + k}"]`);
+                          if (c2) c2.style.display = 'none';
+                      }
+                  }
+              }
+          });
+
+          renderMobileScrollView();
+      }
+
+        let unsubscribeSnapshot = null;
+
+        let theme = 'light'; // 初期値を設定
+
+        function startAppForUser(uid) {
+          initGrid();
+          updateHeaders();
+          renderSelectOptions();
+          renderSettingsLists();
+          setupRealtimeSync(uid);
+          setupTaskRealtimeSync(uid);
+          initializeTasks(uid); // タスク初期化
+        }
+
+        function setupRealtimeSync(uid) {
+          const timetableCollection = collection(db, `timetable_${uid}`);
+          if (unsubscribeSnapshot) unsubscribeSnapshot(); // 前のリスナーを解除
+          unsubscribeSnapshot = onSnapshot(timetableCollection, (snapshot) => {
+            entries = snapshot.docs.map(doc => doc.data());
+            renderTimetable();
+            renderMobileScrollView();
+          });
+        }
+
+        window.addEventListener('beforeunload', () => {
+          if (unsubscribeSnapshot) unsubscribeSnapshot();
+        });
+
+
+        
+
+
+        // セルクリック
+        function onCellClick() {
+          const day = this.dataset.day;
+          const period = this.dataset.period;
+
+          // 曜日とコマをモーダルに設定
+          pf.day.textContent = day;
+          pf.period.textContent = period;
+
+          // 既存のエントリを検索
+          const ex = entries.find(x => x.day === day && x.period === period);
+
+          // モーダルのフィールドを設定
+          pf.subject.value = ex ? ex.subject : '';
+          pf.teacher.value = ex ? ex.teacher : '';
+          pf.items.value = ex ? ex.items : '';
+          pf.url.value = ex ? ex.url : '';
+          pf.notes.value = ex ? ex.notes : '';
+          pf.span.value = ex ? ex.span : '1';
+
+          // モーダルを表示
+          modalOverlay.style.display = 'flex';
+      }
+        document.getElementById('pf-cancel').onclick=()=>modalOverlay.style.display='none';
+window.addEventListener('DOMContentLoaded', () => {
+  const saveBtn = document.getElementById('pf-save');
+  if (saveBtn) {
+        saveBtn.onclick = async () => {
+      try {
+        const data = {
+          day: document.getElementById('pf-day').textContent,
+          period: document.getElementById('pf-period').textContent,
+          subject: document.getElementById('pf-subject').value,
+          teacher: document.getElementById('pf-teacher').value,
+          items: document.getElementById('pf-items').value,
+          url: document.getElementById('pf-url').value,
+          notes: document.getElementById('pf-notes').value,
+          span: parseInt(document.getElementById('pf-span').value) || 1
+        };
+
+        const idx = entries.findIndex(x => x.day === data.day && x.period === data.period);
+        if (idx >= 0) entries.splice(idx, 1, data);
+        else entries.push(data);
+
+        modalOverlay.style.display = 'none';
+        await saveTimetable(currentUserUid); // 保存完了を待つ
+        renderTimetable(); // 保存後に再描画
+        renderMobileScrollView(); // モバイルビューも再描画
+      } catch (error) {
+        console.error('保存中にエラーが発生しました:', error);
+      }
+    };
+  }
+});
+
+        // タスク管理
+        const taskInput = document.getElementById('task-input');
+        const taskList = document.getElementById('task-list');
+
+        // Firestore にタスクを保存
+        async function saveTasksToFirestore(uid) {
+          const tasksCollection = collection(db, `tasks_${uid}`);
+          const tasksToSave = JSON.parse(JSON.stringify(tasks));
+
+          // Firestore のタスクコレクションをクリアしてから再保存
+          const snapshot = await getDocs(tasksCollection);
+          snapshot.forEach(async (doc) => {
+            await deleteDoc(doc.ref);
+          });
+
+          for (const [index, task] of tasksToSave.entries()) {
+            await setDoc(doc(tasksCollection, `task_${index}`), task);
+          }
+        }
+
+        // Firestore からタスクを読み込み
+        async function loadTasksFromFirestore(uid) {
+          const tasksCollection = collection(db, `tasks_${uid}`);
+          const snapshot = await getDocs(tasksCollection);
+
+          tasks = snapshot.docs.map((doc) => doc.data());
+          renderTasks(); // タスクを再描画
+        }
+
+        // Firestore のタスクをリアルタイムで同期
+        function setupTaskRealtimeSync(uid) {
+          const tasksCollection = collection(db, `tasks_${uid}`);
+          onSnapshot(tasksCollection, (snapshot) => {
+            tasks = snapshot.docs.map((doc) => doc.data());
+            renderTasks(); // タスクを再描画
+          });
+        }
+
+        // タスクを追加
+        document.getElementById('add-task').onclick = async () => {
+          const t = taskInput.value.trim();
+          if (!t) return;
+          tasks.push({ text: t, done: false });
+          taskInput.value = '';
+          await saveTasksToFirestore(currentUserUid); // Firestore に保存
+          renderTasks();
+        };
+
+        // タスクを描画
+        function renderTasks() {
+          taskList.innerHTML = '';
+          tasks.forEach((t, i) => {
+            const li = document.createElement('li');
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = t.done;
+            cb.onchange = async () => {
+              t.done = cb.checked;
+              await saveTasksToFirestore(currentUserUid); // Firestore に保存
+            };
+            const span = document.createElement('span');
+            span.textContent = t.text;
+            const btn = document.createElement('button');
+            btn.textContent = '削除';
+            btn.className = 'delete-task';
+            btn.onclick = async () => {
+              tasks.splice(i, 1);
+              await saveTasksToFirestore(currentUserUid); // Firestore に保存
+              renderTasks();
+            };
+            li.append(cb, span, btn);
+            taskList.append(li);
+          });
+        }
+
+                // 初期化時にタスクを Firestore から読み込み
+        async function initializeTasks(uid) {
+          await loadTasksFromFirestore(uid); // Firestore からタスクを読み込む
+          renderTasks(); // タスクを描画
+        }
+
+        async function saveTeachersToFirestore(uid) {
+        const teachersCollection = collection(db, `teachers_${uid}`);
+        const teachersToSave = JSON.parse(JSON.stringify(teachers));
+
+        // Firestore の教員コレクションをクリアしてから再保存
+        const snapshot = await getDocs(teachersCollection);
+        snapshot.forEach(async (doc) => {
+          await deleteDoc(doc.ref);
+        });
+
+        for (const [index, teacher] of teachersToSave.entries()) {
+          await setDoc(doc(teachersCollection, `teacher_${index}`), { name: teacher });
+        }
+      }
+
+        async function loadTeachersFromFirestore(uid) {
+          try {
+            const teachersCollection = collection(db, `teachers_${uid}`);
+            const snapshot = await getDocs(teachersCollection);
+            teachers = snapshot.docs.map((doc) => doc.data().name);
+          } catch (error) {
+            console.error("教員データのロードエラー:", error);
+            teachers = []; // エラー発生時は空配列で初期化
+          }
+        }
+
+    async function saveUrlsToFirestore(uid) {
+      const urlsCollection = collection(db, `urls_${uid}`);
+      const urlsToSave = JSON.parse(JSON.stringify(urls));
+
+      // Firestore のURLコレクションをクリアしてから再保存
+      const snapshot = await getDocs(urlsCollection);
+      snapshot.forEach(async (doc) => {
+        await deleteDoc(doc.ref);
+      });
+
+      for (const [index, url] of urlsToSave.entries()) {
+        await setDoc(doc(urlsCollection, `url_${index}`), url);
+      }
+    }
+
+        async function loadUrlsFromFirestore(uid) {
+          try {
+            const urlsCollection = collection(db, `urls_${uid}`);
+            const snapshot = await getDocs(urlsCollection);
+            urls = snapshot.docs.map((doc) => doc.data()) || [];
+            if (!Array.isArray(urls)) urls = []; // 念のため配列であることを保証
+          } catch (error) {
+            console.error("URLデータのロードエラー:", error);
+            urls = []; // エラー発生時は空配列で初期化
+          }
+        }
+
+
+        // 設定とテーマトグル
+        settingsBtn.onclick = (event) => { event.stopPropagation(); settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block'; };
+        document.addEventListener('click', () => { settingsPanel.style.display = 'none'; });
+        themeSwitch.onchange = async (e) => {
+          theme = e.target.checked ? 'dark' : 'light';
+          document.body.setAttribute('data-theme', theme);
+          if (currentUserUid) {
+            await saveThemeToFirestore(currentUserUid, theme);
+          }
+        };
+
+        async function saveTimetable(uid) {
+          const timetableCollection = collection(db, `timetable_${uid}`);
+          const entriesToSave = JSON.parse(JSON.stringify(entries));
+          for (const e of entriesToSave) {
+            const id = `${e.day}_${e.period}`;
+            await setDoc(doc(timetableCollection, id), e);
+          }
+        }
+
+        async function saveWeekStartToFirestore(uid, weekStart) {
+          const settingsDoc = doc(db, `settings_${uid}`, 'weekStart');
+          await setDoc(settingsDoc, { weekStart });
+        }
+
+        async function loadWeekStartFromFirestore(uid) {
+          const settingsDoc = doc(db, `settings_${uid}`, 'weekStart');
+          const snapshot = await getDoc(settingsDoc);
+          if (snapshot.exists()) {
+            return snapshot.data().weekStart;
+          }
+          return '';
+        }
+
+        async function saveThemeToFirestore(uid, theme) {
+          const settingsDoc = doc(db, `settings_${uid}`, 'theme');
+          await setDoc(settingsDoc, { theme });
+        }
+
+        async function loadThemeFromFirestore(uid) {
+          const settingsDoc = doc(db, `settings_${uid}`, 'theme');
+          const snapshot = await getDoc(settingsDoc);
+          if (snapshot.exists()) {
+            return snapshot.data().theme;
+          }
+          return 'light';
+        }
+
+
+      
+
+
+
+                // 初期化
+        weekInput.value ='';
+        weekInput.addEventListener('change', async () => {
+          try {
+            const weekStart = weekInput.value;
+            if (currentUserUid) {
+              await saveWeekStartToFirestore(currentUserUid, weekStart);
+            }
+            updateHeaders();
+          } catch (error) {
+            console.error('週の開始日の保存中にエラーが発生しました:', error);
+          }
+        });
+        initGrid(); updateHeaders(); renderSelectOptions(); renderSettingsLists(); setupRealtimeSync();
+
+        // 初期化時にスマホ版のビューを設定
+        function checkViewportMode() {
+          const isMobile = window.innerWidth <= 768;
+          document.getElementById('grid').style.display = isMobile ? 'none' : 'grid';
+          document.getElementById('mobile-scroll').style.display = isMobile ? 'flex' : 'none';
+
+          if (isMobile) {
+            renderMobileScrollView();
+          } else {
+            renderTimetable();
+          }
+        }
+
+        window.addEventListener('resize', checkViewportMode);
+        checkViewportMode();
+
+        // 初期化のとき呼ぶ
+        checkViewportMode();
+
+        // 初期化時に設定を読み込み
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            currentUserUid = user.uid;
+            updateLoginUI(user);
+            await initializeSettings(currentUserUid);
+            startAppForUser(currentUserUid);
+          } else {
+            updateLoginUI(null);
+          }
+        });
+
+        // 初期化時にタスクをリアルタイム同期
+        if (currentUserUid) {
+          setupTaskRealtimeSync(currentUserUid);
+        }
+
+        // 初期化時にタイムテーブルを描画
+        initGrid();
+        updateHeaders();
+
+
+      </script>
+</body>
+</html>
