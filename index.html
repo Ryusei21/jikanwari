@@ -1043,19 +1043,6 @@ window.addEventListener('DOMContentLoaded', () => {
           });
         }
 
-                // 初期化時にタスクを Firestore から読み込み
-            async function initializeSettings(uid) {
-              tasks = await loadTasksFromFirestore(uid);
-              teachers = await loadTeachersFromFirestore(uid);
-              await loadUrlsFromFirestore(uid);
-              weekInput.value = await loadWeekStartFromFirestore(uid) || '';
-              theme = await loadThemeFromFirestore(uid) || 'light';
-              document.body.setAttribute('data-theme', theme);
-              themeSwitch.checked = (theme === 'dark');
-              renderSettingsLists();
-              renderSelectOptions();
-            }
-
         async function saveTeachersToFirestore(uid) {
         const teachersCollection = collection(db, `teachers_${uid}`);
         const teachersToSave = JSON.parse(JSON.stringify(teachers));
