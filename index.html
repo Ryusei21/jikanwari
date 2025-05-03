@@ -1073,6 +1073,8 @@ window.addEventListener('DOMContentLoaded', () => {
       urls = snapshot.docs.map((doc) => doc.data());
       renderSettingsLists(); // URLリストを再描画
       renderSelectOptions(); // URL選択肢を再描画
+
+        return loadedurls;
     }
         // すべての削除ボタンに対して処理を追加
             document.addEventListener("click", function (event) {
