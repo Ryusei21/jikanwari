@@ -402,14 +402,20 @@
         left: 1.5rem;
         background: var(--accent);
         color: #fff;
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
+        padding: 0.3rem 0.5rem;
+        border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
         z-index: 1000;
+      }
+            #auth-controls #user-name {
+        font-size: 0.9rem; /* 「～～さんでログイン中」のフォントサイズを調整 */
+        white-space: nowrap; /* テキストが折り返されないようにする */
+        overflow: hidden; /* 必要に応じてテキストを切り詰める */
+        text-overflow: ellipsis; /* 長い場合は省略記号を表示 */
       }
         
         #auth-controls button {
@@ -433,8 +439,8 @@
         }
         
         #auth-controls img {
-          width: 5px;
-          height: 5px;
+          width: 14px;
+          height: 14px;
         }
       }
     </style>
