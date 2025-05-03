@@ -714,22 +714,46 @@
 
         // 設定パネル初期化
         function renderSettingsLists() {
-            const tList = document.getElementById('teacher-list');
-            tList.innerHTML = '';
-            teachers.forEach((t,i)=>{
-                const li = document.createElement('li'); li.textContent = t;
-                const btn = document.createElement('button'); btn.textContent='×';
-                btn.onclick = () => { teachers.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
-                li.append(btn); tList.append(li);
-            });
-            const uList = document.getElementById('url-list');
-            uList.innerHTML = '';
-            (urls || []).forEach((u, i) => { // 修正: urls が undefined の場合に空配列を使用
-                const li = document.createElement('li'); li.textContent = u.name;
-                const btn = document.createElement('button'); btn.textContent='×';
-                btn.onclick = () => { urls.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
-                li.append(btn); uList.append(li);
-            });
+          const tList = document.getElementById('teacher-list');
+          tList.innerHTML = '';
+          teachers.forEach((t,i)=>{
+            const li = document.createElement('li'); li.textContent = t;
+            const btn = document.createElement('button'); btn.textContent='×';
+            btn.onclick = () => { teachers.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
+            li.append(btn); tList.append(li);
+          });
+          const uList = document.getElementById('url-list');
+          uList.innerHTML = '';
+          urls.forEach((u, i) => { // 初期化された urls を直接使用
+            const li = document.createElement('li'); li.textContent = u.name;
+            const btn = document.createElement('button'); btn.textContent='×';
+            btn.onclick = () => { urls.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
+            li.append(btn); uList.append(li);
+          });
+        }
+        
+        // urls をロードする関数 (例)
+        async function loadUrls() {
+          // ここで Firestore から urls を取得する処理などを記述
+          // 例: const fetchedUrls = await getUrlsFromFirestore();
+          // if (fetchedUrls) {
+          //   urls = fetchedUrls;
+          //   renderSettingsLists();
+          //   renderSelectOptions();
+          // } else {
+          //   console.error("URLのロードに失敗しました");
+          // }
+          // ローカルストレージから読み込む場合も同様
+          const storedUrls = localStorage.getItem('urls');
+          if (storedUrls) {
+            urls = JSON.parse(storedUrls);
+            renderSettingsLists();
+            renderSelectOptions();
+          } else {
+            urls = []; // ローカルストレージにもない場合は空配列で初期化
+            renderSettingsLists();
+            renderSelectOptions();
+          }
         }
         document.getElementById('add-teacher').onclick = async () => {
           const v = document.getElementById('new-teacher').value.trim();
@@ -1067,11 +1091,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadUrlsFromFirestore(uid) {
-      const urlsCollection = collection(db, `urls_${uid}`);
-      const snapshot = await getDocs(urlsCollection);
+          try {
+            const collectionRef = collection(db, 'urls');
+            const snapshot = await getDocs(collectionRef);
+            const urlsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return urlsData;
+          } catch (error) {
+            console.error("Firestoreからのデータロードエラー:", error);
+            return []; // エラー発生時は空の配列を返すなどの安全な処理
+          }
 
-      urls = snapshot.docs.map((doc) => doc.data())||[];
-      if (!Array.isArray(urls)) urls = []; // 念のため配列であることを保証
       renderSettingsLists(); // URLリストを再描画
       renderSelectOptions(); // URL選択肢を再描画
     }
