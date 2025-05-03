@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>時間割マネージャー</title>
+    <style>
+        :root {
+          --bg-light: #ffffff;
+          --bg-dark: #f2f2f2;
+          --text-main: #333333;
+          --accent: #4e54c8;
+          --border: #cccccc;
+        }
+
+
+
+        [data-theme="dark"] {
+            --bg-light: #1f1f2e;
+            --bg-alt: #2b2b3c;
+            --text-main: #ececec;
+            --text-secondary: #bbbbbb;
+            --accent: #ff79c6;
+            --border: #444444;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: var(--font-base); background: var(--bg-alt); color: var(--text-main); }
+        header { background: var(--accent); color: #fff; padding: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 1.5rem; position: relative; }
+        .container { max-width: 1200px; margin: auto; padding: 1rem; display: grid; grid-template-rows: auto auto 1fr auto; gap: 1rem; }
+        .week-input { text-align: center; }
+        .week-input input { padding: 0.6rem; font-size: 1rem; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-light); color: var(--text-main); }
+        #grid {
+          display: grid;
+          grid-template-columns: 60px repeat(5, 1fr); /* 1列目＝時限用、残り5列＝月〜金 */
+          gap: 6px;
+          padding: 1rem;
+          background-color: var(--bg-light);
+          border-radius: 8px;
+        }
+
+        .header-cell { background: var(--accent); color: #fff; text-align: center; font-weight: bold; line-height: 1.2; }
+        .period-header, .day-header { background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; }
+        .day-header {
+          background-color: var(-accent);
+          color: #fff;
+          font-weight: bold;
+          padding: 0.6rem;
+          border-radius: 4px;
+          text-align: center;
+          font-size: 1rem;
+        }
+        .cell {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: 0.6rem;
+          background-color: var(--bg-light);
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          font-size: 0.95rem;
+          line-height: 1.4;
+          text-align: center;
+          min-height: 100px;
+          word-break: break-word;
+          white-space: normal;
+          color:var(--text-main)
+        }
+
+        .cell:hover { background: rgba(0,0,0,0.05); }
+        .subject {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            color: var(--accent);
+            word-wrap: break-word;
+            line-height: 1.2;
+        }
+        .cell strong {
+          display: block;
+          font-weight: bold;
+          font-size: 1.05rem;
+          margin-bottom: 0.3rem;
+        }
+        
+        .cell i {
+          display: block;
+          font-style: italic;
+          color: #777;
+          font-size: 0.8rem;
+          margin-top: 0.2rem;
+        }
+
+
+        .info {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            word-wrap: break-word;
+            line-height: 1.2;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #e74c3c;
+            border: none;
+            color: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .cell:hover .delete-btn {
+            opacity: 1;
+        }
+        .tasks { background: var(--bg-light); padding: 1rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .tasks h3 { margin: 0 0 0.5rem; color: var(--accent); }
+        .task-input { display: flex; gap: 0.5rem; }
+        .task-input textarea { flex: 1; padding: 0.8rem; border: 1px solid var(--border); border-radius: 4px; resize: vertical; height: 60px; font-size: 1rem; background: var(--bg-light); color: var(--text-main); }
+        .task-input button.add { padding: 0 1.2rem; background: var(--accent); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        .tasks ul { list-style: none; padding: 0; margin: 0.5rem 0 0; }
+        .tasks li { display: flex; align-items: center; margin-bottom: 0.6rem; font-size: 1rem; }
+        .tasks li input[type="checkbox"] { width: 20px; height: 20px; margin-right: 0.8rem; }
+        .tasks li button.delete-task { margin-left: auto; background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.9rem; }
+        /* モーダル */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 1000;}
+        .modal { background: var(--bg-light); padding: 1.5rem; border-radius: 8px; width: 360px; max-width: 90%; }
+        .modal h2 { margin: 0 0 1rem; color: var(--accent); font-size: 1.2rem; }
+        .modal label { display: block; margin: 0.5rem 0 0.2rem; font-size: 0.9rem; }
+        .modal input, .modal textarea, .modal select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 4px; font-size: 1rem; background: var(--bg-light); color: var(--text-main); }
+        .modal textarea { resize: vertical; height: 60px; }
+        .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
+        .actions button { flex: 1; padding: 0.6rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        .actions .save { background: var(--accent); color: #fff; }
+        .actions .cancel { background: var(--border); color: var(--text-main); }
+        /* 設定パネル */
+        #settings-panel {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 1rem;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            min-width: 250px;
+            color:var(--text-main)
+        }
+        #settings-panel h3 { margin-top: 0; color: var(--accent); font-size: 1rem; }
+        #settings-panel ul { list-style: none; padding: 0; margin: 0.5rem 0; max-height: 120px; overflow-y: auto; font-size: 0.9rem; }
+        #settings-panel li { display: flex; align-items: center; margin-bottom: 0.4rem; font-size: 0.9rem; }
+        #settings-panel li button { margin-left: auto; background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 0.9rem; }
+        #settings-panel input[type="text"], #settings-panel input[type="url"] { width: calc(100% - 60px); padding: 0.4rem; font-size: 0.9rem; margin-right: 0.5rem; }
+        #settings-panel button.add-item { padding: 0.4rem; font-size: 0.9rem; background: var(--accent); color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* スマホ用スタイル */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+                grid-template-rows: auto auto auto 1fr auto;
+            }
+            header {
+                font-size: 1.2rem;
+                padding: 0.5rem;
+            }
+            .schedule-grid {
+                grid-template-columns: 40px repeat(5, 1fr);
+                grid-auto-rows: 80px;
+                gap: 4px;
+                padding: 4px;
+            }
+            .header-cell {
+              padding: 0.5rem;
+              margin: 0.2rem;
+              font-size: 1rem;
+              text-align: center;
+              background-color: #f0f0f0;
+              border-radius: 4px;
+            }
+            
+            .period-header, .day-header {
+              padding: 0.5rem;
+              margin: 0.2rem;
+              font-size: 1rem;
+              text-align: center;
+              background-color: #f0f0f0;
+              border-radius: 4px;
+            }
+            .day-header {
+                flex-direction: column;
+                font-size: 0.7rem;
+            }
+            .cell {
+                padding: 0.2rem;
+            }
+            .subject {
+                font-size: 0.9rem;
+            }
+            .info {
+                font-size: 0.75rem;
+            }
+            .task-input {
+                flex-direction: column;
+            }
+            .task-input textarea {
+                margin-bottom: 0.5rem;
+                height: auto;
+                font-size: 0.9rem;
+            }
+            .task-input button.add {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+            .tasks li {
+                font-size: 0.9rem;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .tasks li input[type="checkbox"] {
+                margin-right: 0;
+                margin-bottom: 0.2rem;
+            }
+            .modal {
+                padding: 1rem;
+                width: 95%;
+            }
+            .modal h2 {
+                font-size: 1rem;
+            }
+            .modal label {
+                font-size: 0.8rem;
+            }
+            .modal input, .modal textarea, .modal select {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+            .actions button {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+            #settings-panel {
+                top: auto;
+                bottom: 100%;
+                right: 0;
+                left: auto;
+                transform: translateX(0);
+                min-width: 90%;
+            }
+            #settings-panel h3 {
+                font-size: 0.9rem;
+            }
+            #settings-panel ul {
+                font-size: 0.8rem;
+            }
+            #settings-panel li {
+                font-size: 0.8rem;
+            }
+            #settings-panel input[type="text"],
+            #settings-panel input[type="url"] {
+                font-size: 0.8rem;
+                padding: 0.3rem;
+            }
+            #settings-panel button.add-item {
+                font-size: 0.8rem;
+                padding: 0.3rem;
+            }
+        }
+
+        /* スマホ縦持ちスタイル */
+        @media (max-width: 480px) {
+            .schedule-grid {
+                grid-template-columns: 1fr;
+                grid-auto-rows: auto;
+            }
+            .day-header {
+                display: none;
+            }
+            .period-header {
+                font-size: 0.7rem;
+                padding: 0.5rem;
+                justify-content: flex-start;
+            }
+            .cell {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 0.5rem;
+                text-align: left;
+                border-bottom: 1px solid var(--border);
+            }
+            .cell:nth-child(n+7) {
+                border-top: 1px solid var(--border);
+            }
+            .subject {
+                font-size: 1rem;
+            }
+            .info {
+                font-size: 0.8rem;
+            }
+            .delete-btn {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+            }
+            .week-input input {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+            header {
+                font-size: 1rem;
+            }
+            .tasks h3 {
+                font-size: 1rem;
+            }
+        }
+        @media (max-width: 768px) {
+        .schedule-grid {
+            display: none; /* PCグリッドは非表示に */
+        }
+    
+        .mobile-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 1rem;
+            padding: 1rem;
+        }
+    
+        .day-group {
+            flex: 0 0 90%;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            scroll-snap-align: start;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            min-width: 280px;
+        }
+    
+        .day-group h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color:#f0f0f0;
+        }
+    
+        .class-entry {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+    
+        .class-entry strong {
+            color: var(--text-main);
+        }
+    }
+    #auth-controls {
+          position: fixed;
+          top: 1rem;
+          right: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          font-size: 0.85rem;
+          z-index: 1000;
+          background: rgba(255,255,255,0.95);
+          padding: 0.5rem 0.75rem;
+          border-radius: 12px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+          color:#333;
+        }
+        
+        #auth-controls button {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          background-color: white;
+          color: #444;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 0.35rem 0.75rem;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: background-color 0.2s, box-shadow 0.2s;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        #auth-controls button:hover {
+          background-color: #f3f3f3;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        
+        #auth-controls img {
+          width: 18px;
+          height: 18px;
+        }
+
+            #settingsBtn {
+              position: fixed;
+              bottom: 1.5rem;
+              right: 1.5rem;
+              width: 48px;
+              height: 48px;
+              background-color: #4e54c8;
+              color: white;
+              border: none;
+              border-radius: 50%;
+              font-size: 24px;
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+              cursor: pointer;
+              z-index: 999;
+              transition: transform 0.2s, background-color 0.2s;
+            }
+            
+            #settingsBtn:hover {
+              background-color: #3e44b0;
+              transform: scale(1.1);
+            }
+
+
+    </style>
+</head>
+<body data-theme="light">
+    <header>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div id="auth-controls">
+              <span id="user-name">未ログイン</span>
+              <button id="login-button">Googleでログイン</button>
+              <button id="logout-button" style="display: none;">ログアウト</button>
+            </div>
+            <button id="settingsBtn"class="settings-button">⚙️</button>
+          </div>
+
+        <div id="settings-panel" onclick="event.stopPropagation()">
+            <h3>ダークモード</h3>
+            <label class="switch">
+                <input type="checkbox" id="theme-switch">
+                <span class="slider"></span>
+            </label>
+            <h3>教員リスト</h3>
+            <ul id="teacher-list"></ul>
+            <div><input type="text" id="new-teacher" placeholder="新しい教員名" /><button class="add-item" id="add-teacher">追加</button></div>
+            <h3>持ち物リスト</h3>
+            <ul id="items-list"></ul>
+            <div><input type="text" id="new-item" placeholder="新しい持ち物" /><button class="add-item" id="add-item-btn">追加</button></div>
+            <h3>しらばすURLリスト</h3>
+            <ul id="url-list"></ul>
+            <div>
+                <input type="text" id="new-url-name" placeholder="URLの名前" />
+                <input type="url" id="new-url" placeholder="URLを入力" />
+                <button class="add-item" id="add-url">追加</button>
+            </div>
+        </div>
+
+    </header>
+    <div class="container">
+        <div class="week-input">
+            <input type="date" id="week-start" />
+        </div>
+        <div class="schedule-grid" id="grid"></div>
+        <div class="mobile-scroll" id="mobile-scroll" style="display: none;"></div>
+
+        <div class="tasks">
+            <h3>タスク・提出物</h3>
+            <div class="task-input">
+                <textarea id="task-input" placeholder="タスクを入力（2行まで）"></textarea>
+                <button class="add" id="add-task">追加</button>
+            </div>
+            <ul id="task-list"></ul>
+        </div>
+    </div>
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="edit-modal" onclick="event.stopPropagation()">
+            <h2>授業編集</h2>
+            <label>曜日: <span id="pf-day"></span></label>
+            <label>コマ: <span id="pf-period"></span></label>
+            <label for="pf-subject">科目名</label><input type="text" id="pf-subject" tabindex="1" />
+            <label for="pf-teacher">教員</label>
+            <select id="pf-teacher" tabindex="2"></select>
+            <label for="pf-items">持ち物（自由入力）</label>
+            <input type="text" id="pf-items" tabindex="3" />
+            <label for="pf-url">しらばすURL</label>
+            <select id="pf-url" tabindex="4"></select>
+            <label for="pf-notes">連絡事項</label><textarea id="pf-notes" tabindex="5"></textarea>
+            <label for="pf-span">連続コマ</label><select id="pf-span" tabindex="6"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+            <div class="actions">
+                <button class="save" id="pf-save" tabindex="7">保存</button>
+                <button class="cancel" id="pf-cancel" tabindex="8">キャンセル</button>
+            </div>
+        </div>
+    </div>
+    <script type="module">
+
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+
+        
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyArgJAG3fnR72vYSU7VvA-EuZX1nYz3Od4",
+          authDomain: "jikanmanager.firebaseapp.com",
+          projectId: "jikanmanager",
+          storageBucket: "jikanmanager.firebasestorage.app",
+          messagingSenderId: "431451778118",
+          appId: "1:431451778118:web:649adadee60a2576fc2e47"
+        };
+
+              
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        
+        const loginBtn = document.getElementById('login-button');
+        const logoutBtn = document.getElementById('logout-button');
+        const userNameSpan = document.getElementById('user-name');
+        let currentUserUid = null;
+        
+        loginBtn.onclick = () => {
+          signInWithPopup(auth, provider)
+            .then((result) => {
+              const user = result.user;
+              updateLoginUI(user);
+              startAppForUser(user.uid);
+            })
+            .catch((error) => {
+              alert("ログインに失敗しました：" + error.message);
+            });
+        };
+        
+        logoutBtn.onclick = () => {
+          auth.signOut().then(() => {
+            location.reload(); // ログアウト後はリロードしてUI初期化
+          });
+        };
+        
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            updateLoginUI(user);
+            currentUserUid = user.uid;
+            startAppForUser(currentUserUid);
+          } else {
+            updateLoginUI(null);
+          }
+        });
+        
+        function updateLoginUI(user) {
+          if (user) {
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'inline-block';
+            userNameSpan.textContent = `${user.displayName} さんでログイン中`;
+          } else {
+            loginBtn.style.display = 'inline-block';
+            logoutBtn.style.display = 'none';
+            userNameSpan.textContent = '未ログイン';
+          }
+        }
+
+        const db = getFirestore(app);
+        
+        const days = ['月','火','水','木','金'];
+        const grid = document.getElementById('grid');
+        const weekInput = document.getElementById('week-start');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const themeSwitch = document.getElementById('theme-switch');
+
+        // 状態管理
+        import { getDocs, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+
+        function renderMobileScrollView() {
+          const container = document.getElementById('mobile-scroll');
+          container.innerHTML = '';
+        
+          const days = ['月曜日','火曜日','水曜日','木曜日','金曜日'];
+        
+          days.forEach(day => {
+            const section = document.createElement('div');
+            section.className = 'day-group';
+            section.innerHTML = `<h3>${day}</h3>`;
+        
+            const dayEntries = entries.filter(e => e.day === day);
+            dayEntries.sort((a, b) => parseInt(a.period) - parseInt(b.period));
+        
+            dayEntries.forEach(e => {
+              const div = document.createElement('div');
+              div.className = 'class-entry';
+            div.innerHTML = `
+              <strong>${e.subject}</strong>
+              ${e.teacher || ''}<br>
+              ${e.items || ''}
+              ${e.notes ? `<i>${e.notes}</i>` : ''}
+            `;
+
+              section.appendChild(div);
+            });
+        
+            container.appendChild(section);
+          });
+        }
+
+
+
+        let tasks = JSON.parse(localStorage.getItem('tasks'))||[];
+        let teachers = JSON.parse(localStorage.getItem('teachers'))||["山田太郎","田中花子","鈴木一郎","佐藤美咲","高橋健太"];
+        let items = JSON.parse(localStorage.getItem('items'))||["教科書","ノート","筆記用具","PC","資料"];
+        let urls = JSON.parse(localStorage.getItem('urls'))||[];
+        let theme = localStorage.getItem('theme')||'light';
+        document.body.setAttribute('data-theme', theme);
+        themeSwitch.checked = (theme==='dark');
+
+        // モーダル要素参照
+        const pf = {
+            day: document.getElementById('pf-day'),
+            period: document.getElementById('pf-period'),
+            subject: document.getElementById('pf-subject'),
+            teacher: document.getElementById('pf-teacher'),
+            items: document.getElementById('pf-items'),
+            url: document.getElementById('pf-url'),
+            notes: document.getElementById('pf-notes'),
+            span: document.getElementById('pf-span')
+        };
+
+        // グローバルスコープで entries を宣言
+        let entries = [];
+
+        // 設定パネル初期化
+        function renderSettingsLists() {
+            const tList = document.getElementById('teacher-list');
+            tList.innerHTML = '';
+            teachers.forEach((t,i)=>{
+                const li = document.createElement('li'); li.textContent = t;
+                const btn = document.createElement('button'); btn.textContent='×';
+                btn.onclick = () => { teachers.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
+                li.append(btn); tList.append(li);
+            });
+            const iList = document.getElementById('items-list');
+            iList.innerHTML = '';
+            items.forEach((it,i)=>{
+                const li = document.createElement('li'); li.textContent = it;
+                const btn = document.createElement('button'); btn.textContent='×';
+                btn.onclick = () => { items.splice(i,1); saveSettings(); renderSettingsLists(); };
+                li.append(btn); iList.append(li);
+            });
+            const uList = document.getElementById('url-list');
+            uList.innerHTML = '';
+            urls.forEach((u,i)=>{
+                const li = document.createElement('li'); li.textContent = u.name;
+                const btn = document.createElement('button'); btn.textContent='×';
+                btn.onclick = () => { urls.splice(i,1); saveSettings(); renderSettingsLists(); renderSelectOptions(); };
+                li.append(btn); uList.append(li);
+            });
+        }
+        document.getElementById('add-teacher').onclick = () => {
+            const v = document.getElementById('new-teacher').value.trim(); if (!v) return;
+            teachers.push(v); document.getElementById('new-teacher').value=''; saveSettings(); renderSettingsLists(); renderSelectOptions();
+        };
+        document.getElementById('add-item-btn').onclick = () => {
+            const v = document.getElementById('new-item').value.trim(); if (!v) return;
+            items.push(v); document.getElementById('new-item').value=''; saveSettings(); renderSettingsLists();
+        };
+        document.getElementById('add-url').onclick = () => {
+            const name = document.getElementById('new-url-name').value.trim();
+            const link = document.getElementById('new-url').value.trim();
+            if (!name || !link) return;
+            urls.push({ name, link });
+            document.getElementById('new-url-name').value='';
+            document.getElementById('new-url').value='';
+            saveSettings(); renderSettingsLists(); renderSelectOptions();
+        };
+        function saveSettings(){
+            localStorage.setItem('teachers', JSON.stringify(teachers));
+            localStorage.setItem('items', JSON.stringify(items));
+            localStorage.setItem('urls', JSON.stringify(urls));
+        }
+
+        // モーダルの選択肢生成
+        function renderSelectOptions() {
+            // 教員
+            pf.teacher.innerHTML = '<option value="">-- 教員を選択 --</option>';
+            teachers.forEach(t=> { const o = document.createElement('option'); o.value=o.textContent=t; pf.teacher.append(o);} );
+            // URL
+            pf.url.innerHTML = '<option value="">-- URLを選択 --</option>';
+            urls.forEach(u=> { const o = document.createElement('option'); o.value = u.link; o.textContent = u.name; pf.url.append(o);} );
+        }
+
+        // グリッド初期化と更新
+        function initGrid() {
+            grid.innerHTML = '';
+            grid.appendChild(createCell('header-cell',''));
+            days.forEach(d=>grid.appendChild(createCell('header-cell day-header',d+'<br><small>--/--</small>')));
+            for(let p=1;p<=5;p++){
+                grid.appendChild(createCell('header-cell period-header',p+'限'));
+                days.forEach(d=>{ const c=createCell('cell',''); c.dataset.day=d+'曜日'; c.dataset.period=p; c.addEventListener('click',onCellClick); grid.appendChild(c); });
+            }
+        }
+        function createCell(cls,html){ const el=document.createElement('div'); el.className=cls; el.innerHTML=html; return el; }
+        function updateHeaders(){ if(!weekInput.value)return; const base=new Date(weekInput.value);
+            days.forEach((d,i)=>{ const cell=grid.children[i+1]; const dt=new Date(base); dt.setDate(base.getDate()+i);
+                cell.innerHTML = d+'<br><small>'+ (dt.getMonth()+1)+'/'+dt.getDate()+'</small>';
+            }); localStorage.setItem('weekStart',weekInput.value);
+        }
+        // タイムテーブル描画
+        function renderTimetable(){
+            document.querySelectorAll('.cell').forEach(c=>{ c.innerHTML=''; c.style.gridRowEnd='span 1'; c.style.display='flex'; });
+            entries.forEach((e,i)=>{
+                const sel=`.cell[data-day="${e.day}"][data-period="${e.period}"]`;
+                const cell=document.querySelector(sel);
+        if(cell){
+                    cell.style.background=getComputedStyle(document.documentElement).getPropertyValue('--accent')+'22';
+                    let html = `
+                        <div class="subject">${e.subject}</div>
+                        <div class="info">${e.teacher||''}</div>
+                        <div class="info">${e.items||''}</div>
+                    `;
+                    if(e.url){ html += `<div class="info"><a href="${e.url}" target="_blank">${e.urlName}</a></div>`; }
+                    if(e.notes){ html += `<div class="info"><i>${e.notes}</i></div>`; }
+                    cell.innerHTML = html;
+                    const btn=document.createElement('button'); btn.textContent='×'; btn.className='delete-btn'; btn.onclick=()=>{ entries.splice(i,1); saveTimetable(); };
+                    cell.append(btn);
+                    const spanNum=parseInt(e.span);
+                    if(spanNum>1){ cell.style.gridRowEnd='span '+spanNum;
+                        for(let k=1;k<spanNum;k++){
+                            const c2=document.querySelector(`.cell[data-day="${e.day}"][data-period="${parseInt(e.period)+k}"]`);
+                            if(c2) c2.style.display='none';
+                        }
+                    }
+                }
+            });
+            renderMobileScrollView();
+        }
+        import { setDoc, doc, deleteDoc, } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        import { onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let unsubscribeSnapshot = null;
+
+        function startAppForUser(uid) {
+          initGrid();
+          updateHeaders();
+          renderSelectOptions();
+          renderSettingsLists();
+          setupRealtimeSync(uid);
+          setupTaskRealtimeSync(uid);
+          initializeTasks(uid); // タスク初期化
+        }
+
+        function setupRealtimeSync(uid) {
+          const timetableCollection = collection(db, `timetable_${uid}`);
+          if (unsubscribeSnapshot) unsubscribeSnapshot(); // ← 前のリスナー停止
+          unsubscribeSnapshot = onSnapshot(timetableCollection, (snapshot) => {
+            entries = snapshot.docs.map(doc => doc.data());
+            renderTimetable();
+            renderMobileScrollView();
+          });
+        }
+
+
+        
+
+
+        // セルクリック
+        function onCellClick(){ const day=this.dataset.day, period=this.dataset.period;
+            pf.day.textContent=day; pf.period.textContent=period;
+            const ex=entries.find(x=>x.day===day&&x.period===period);
+            pf.subject.value=ex?ex.subject:'';
+            pf.teacher.value=ex?ex.teacher:'';
+            pf.items.value=ex?ex.items:'';
+            pf.url.value=ex?ex.url:'';
+            pf.notes.value=ex?ex.notes:'';
+            pf.span.value=ex?ex.span:'1';
+            modalOverlay.style.display='flex';
+        }
+        document.getElementById('pf-cancel').onclick=()=>modalOverlay.style.display='none';
+window.addEventListener('DOMContentLoaded', () => {
+  const saveBtn = document.getElementById('pf-save');
+  if (saveBtn) {
+    saveBtn.onclick = () => {
+      const data = {
+        day: document.getElementById('pf-day').textContent,
+        period: document.getElementById('pf-period').textContent,
+        subject: document.getElementById('pf-subject').value,
+        teacher: document.getElementById('pf-teacher').value,
+        items: document.getElementById('pf-items').value,
+        url: document.getElementById('pf-url').value,
+        notes: document.getElementById('pf-notes').value,
+        span: parseInt(document.getElementById('pf-span').value) || 1
+      };
+
+      const idx = entries.findIndex(x => x.day === data.day && x.period === data.period);
+      if (idx >= 0) entries.splice(idx, 1, data);
+      else entries.push(data);
+
+      modalOverlay.style.display = 'none';
+      saveTimetable(currentUserUid); // 保存完了を待つ
+      renderTimetable(); // 保存後に再描画
+      renderMobileScrollView(); // モバイルビューも再描画
+
+      if (currentUserUid) {
+    initializeTasks(currentUserUid);
+  }
+    };
+  }
+});
+
+        // タスク管理
+        const taskInput = document.getElementById('task-input');
+        const taskList = document.getElementById('task-list');
+
+        // Firestore にタスクを保存
+        async function saveTasksToFirestore(uid) {
+          const tasksCollection = collection(db, `tasks_${uid}`);
+          const tasksToSave = JSON.parse(JSON.stringify(tasks));
+
+          // Firestore のタスクコレクションをクリアしてから再保存
+          const snapshot = await getDocs(tasksCollection);
+          snapshot.forEach(async (doc) => {
+            await deleteDoc(doc.ref);
+          });
+
+          for (const [index, task] of tasksToSave.entries()) {
+            await setDoc(doc(tasksCollection, `task_${index}`), task);
+          }
+        }
+
+        // Firestore からタスクを読み込み
+        async function loadTasksFromFirestore(uid) {
+          const tasksCollection = collection(db, `tasks_${uid}`);
+          const snapshot = await getDocs(tasksCollection);
+
+          tasks = snapshot.docs.map((doc) => doc.data());
+          renderTasks(); // タスクを再描画
+        }
+
+        // Firestore のタスクをリアルタイムで同期
+        function setupTaskRealtimeSync(uid) {
+          const tasksCollection = collection(db, `tasks_${uid}`);
+          onSnapshot(tasksCollection, (snapshot) => {
+            tasks = snapshot.docs.map((doc) => doc.data());
+            renderTasks(); // タスクを再描画
+          });
+        }
+
+        // タスクを追加
+        document.getElementById('add-task').onclick = async () => {
+          const t = taskInput.value.trim();
+          if (!t) return;
+          tasks.push({ text: t, done: false });
+          taskInput.value = '';
+          await saveTasksToFirestore(currentUserUid); // Firestore に保存
+          renderTasks();
+        };
+
+        // タスクを描画
+        function renderTasks() {
+          taskList.innerHTML = '';
+          tasks.forEach((t, i) => {
+            const li = document.createElement('li');
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = t.done;
+            cb.onchange = async () => {
+              t.done = cb.checked;
+              await saveTasksToFirestore(currentUserUid); // Firestore に保存
+            };
+            const span = document.createElement('span');
+            span.textContent = t.text;
+            const btn = document.createElement('button');
+            btn.textContent = '削除';
+            btn.className = 'delete-task';
+            btn.onclick = async () => {
+              tasks.splice(i, 1);
+              await saveTasksToFirestore(currentUserUid); // Firestore に保存
+              renderTasks();
+            };
+            li.append(cb, span, btn);
+            taskList.append(li);
+          });
+        }
+
+                // 初期化時にタスクを Firestore から読み込み
+        async function initializeTasks(uid) {
+          await loadTasksFromFirestore(uid); // Firestore からタスクを読み込む
+          renderTasks(); // タスクを描画
+        }
+
+
+        // 設定とテーマトグル
+        settingsBtn.onclick = (event) => { event.stopPropagation(); settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block'; };
+        document.addEventListener('click', () => { settingsPanel.style.display = 'none'; });
+        themeSwitch.onchange = e => { theme=e.target.checked?'dark':'light'; document.body.setAttribute('data-theme',theme); localStorage.setItem('theme',theme); };
+
+
+        async function saveTimetable(uid) {
+          const timetableCollection = collection(db, `timetable_${uid}`);
+          const entriesToSave = JSON.parse(JSON.stringify(entries));
+          for (const e of entriesToSave) {
+            const id = `${e.day}_${e.period}`;
+            await setDoc(doc(timetableCollection, id), e);
+          }
+        }
+
+
+      
+
+
+
+                // 初期化
+        weekInput.value = localStorage.getItem('weekStart')||'';
+        weekInput.addEventListener('change', updateHeaders);
+        initGrid(); updateHeaders(); renderSelectOptions(); renderSettingsLists(); setupRealtimeSync();
+
+        function checkViewportMode() {
+        const isMobile = window.innerWidth <= 768;
+        document.getElementById('grid').style.display = isMobile ? 'none' : 'grid';
+        document.getElementById('mobile-scroll').style.display = isMobile ? 'flex' : 'none';
+        }
+        
+        window.addEventListener('resize', () => {
+            checkViewportMode();
+            renderTimetable();
+            renderMobileScrollView();
+        });
+        
+        // 初期化のとき呼ぶ
+        checkViewportMode();
+        renderMobileScrollView();
+
+        // 初期化時にタスクを Firestore から読み込み
+      loadTasksFromFirestore(currentUserUid);
+      setupTaskRealtimeSync(currentUserUid);
+
+
+      </script>
+</body>
+</html>
