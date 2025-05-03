@@ -689,7 +689,7 @@
       async function initializeSettings(uid) {
         tasks = await loadTasksFromFirestore(uid);
         teachers = await loadTeachersFromFirestore(uid);
-        urls = await loadUrlsFromFirestore(uid);
+        urls = await loadUrlsFromFirestore(uid)||[];
         weekInput.value = await loadWeekStartFromFirestore(uid) || '';
         theme = await loadThemeFromFirestore(uid) || 'light';
         document.body.setAttribute('data-theme', theme);
@@ -1070,7 +1070,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const urlsCollection = collection(db, `urls_${uid}`);
       const snapshot = await getDocs(urlsCollection);
 
-      urls = snapshot.docs.map((doc) => doc.data());
+      urls = snapshot.docs.map((doc) => doc.data())||[];
       renderSettingsLists(); // URLリストを再描画
       renderSelectOptions(); // URL選択肢を再描画
     }
