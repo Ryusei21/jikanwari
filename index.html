@@ -999,39 +999,34 @@
         document.getElementById('pf-cancel').onclick=()=>modalOverlay.style.display='none';
         document.getElementById('pf-save').onclick = async () => {
     try {
-        // モーダルからデータを取得
+        const selectedUrlValue = document.getElementById('pf-url').value;
+        const selectedUrlName = document.getElementById('pf-url').selectedOptions[0]?.textContent || '';
+
         const data = {
             day: document.getElementById('pf-day').textContent,
             period: document.getElementById('pf-period').textContent,
             subject: document.getElementById('pf-subject').value.trim(),
             teacher: document.getElementById('pf-teacher').value.trim(),
             items: document.getElementById('pf-items').value.trim(),
-            url: document.getElementById('pf-url').value.trim(),
+            url: selectedUrlValue,
+            urlName: selectedUrlName,
             notes: document.getElementById('pf-notes').value.trim(),
             span: parseInt(document.getElementById('pf-span').value) || 1
         };
 
-        // `entries` 配列を更新
+        // entries 配列の更新や保存処理はそのままでOK
         const idx = entries.findIndex(x => x.day === data.day && x.period === data.period);
         if (idx >= 0) {
-            entries[idx] = data; // 既存データを更新
+            entries[idx] = data;
         } else {
-            entries.push(data); // 新しいデータを追加
+            entries.push(data);
         }
 
-        // モーダルを閉じる
         modalOverlay.style.display = 'none';
-
-        // Firestoreに保存
         await saveTimetable(currentUserUid);
-
-        // タイムテーブルを再描画
         renderTimetable();
-
-        // モバイルビューを再描画
         renderMobileScrollView();
-
-        console.log("保存成功:", data); // デバッグ用ログ
+        console.log("保存成功:", data);
     } catch (error) {
         console.error('保存中にエラーが発生しました:', error);
     }
